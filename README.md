@@ -1,2 +1,2 @@
 # HTTPSServer
-An HTTPS Server constructed using LibHTTP.
+An HTTPS Server constructed from the ground up.
