@@ -1,2 +1,2 @@
-# HTTPSServer
-An HTTPS Server constructed from the ground up.
+# HTTP Server
+An HTTP Server constructed from the ground up.
