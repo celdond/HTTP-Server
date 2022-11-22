@@ -23,7 +23,16 @@ static int create_client_socket(connection_port) {
 	return sock;
 }
 
-int main() {
+int main(int argc, char *argv[]) {
+	int connection_port;
+	if (argc != 2) {
+		err(EXIT_FAILURE, "Too many input parameters.");
+	}
+	char *s;
+	connection_port = strtol(argv[1], &s, 10);
+	if (connection_port <= 0 || *s != '\0') {
+		err(EXIT_FAILURE, "Invalid Port");
+	}
 	int connection = create_socket(connection_port);
 	return 0;
 }
