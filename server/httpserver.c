@@ -28,10 +28,20 @@ static int create_socket(int input_port) {
 }
 
 int main (int argc, char *argv[]) {
+	int connection_port;
+        if (argc != 2) {
+                err(EXIT_FAILURE, "Too many input parameters.");
+        }
+        char *s;
+        connection_port = strtol(argv[1], &s, 10);
+        if (connection_port <= 0 || *s != '\0') {
+                err(EXIT_FAILURE, "Invalid Port");
+        }
+	int listen = create_socket(connection_port);
 
-	int listen = create_socket(8080);
-
-	//int connection = accept(listen, NULL, NULL);
-
+	while () {
+		int connection = accept(listen, NULL, NULL);
+	}
+	
 	return EXIT_SUCCESS;
 }
