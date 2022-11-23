@@ -3,6 +3,8 @@
 #include <err.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <ctype.h>
 
 static int create_socket(int input_port) {
 	int sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -39,8 +41,11 @@ int main (int argc, char *argv[]) {
         }
 	int listen = create_socket(connection_port);
 
-	while () {
+	while (1) {
 		int connection = accept(listen, NULL, NULL);
+		char buf[1];
+		recv(connection, buf, 1, 0);
+		write(1, buf, 1);
 	}
 	
 	return EXIT_SUCCESS;

@@ -3,8 +3,33 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <stdlib.h>
+#include <err.h>
+#include <sys/stat.h>
+#include <dirent.h>
+#include <sys/types.h>
 
-static int create_client_socket(connection_port) {
+#define REQUESTS "./requests"
+#define FILES "./request_files"
+
+int serve_requests(int conn) {
+	struct dirent *d;
+	DIR *directory;
+	char *filename = (char *)calloc(1024, sizeof(char));
+
+	if ((directory = opendir(REQUESTS)) == NULL) {
+		err(EXIT_FAILURE, "Cannot access required folder");
+	}
+	while ((d = readdir(directory)) != NULL) {
+		memset(filename, 0, 1024);
+		strcat(filename, "/");
+		strcat(filename, d->d_name);
+		printf("%s\n", filename);
+	}
+	closedir(directory);
+	return 0;
+}
+
+static int create_client_socket(int connection_port) {
 	int sock = socket(AF_INET, SOCK_STREAM, 0);
 	if (sock < 0) {
 		err(EXIT_FAILURE, "Socket Failure");
@@ -33,6 +58,7 @@ int main(int argc, char *argv[]) {
 	if (connection_port <= 0 || *s != '\0') {
 		err(EXIT_FAILURE, "Invalid Port");
 	}
-	int connection = create_socket(connection_port);
+	int connection = create_client_socket(connection_port);
+	serve_requests(connection);
 	return 0;
 }
