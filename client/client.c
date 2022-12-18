@@ -22,8 +22,8 @@ int serve_requests(int conn) {
 	while ((d = readdir(directory)) != NULL) {
 		memset(filename, 0, 1024);
 		strcat(filename, "/");
-		strcat(filename, d->d_name);
-		printf("%s\n", filename);
+		f = fopen(d->d_name, "w");
+		close(f);
 	}
 	closedir(directory);
 	return 0;
