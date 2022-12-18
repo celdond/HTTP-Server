@@ -14,6 +14,7 @@
 int serve_requests(int conn) {
 	struct dirent *d;
 	DIR *directory;
+	FILE *f;
 	char *filename = (char *)calloc(1024, sizeof(char));
 
 	if ((directory = opendir(REQUESTS)) == NULL) {
@@ -23,7 +24,10 @@ int serve_requests(int conn) {
 		memset(filename, 0, 1024);
 		strcat(filename, "/");
 		f = fopen(d->d_name, "w");
-		close(f);
+		if (!f) {
+			err(EXIT_FAILURE, "Cannot access file");
+		}
+		fclose(f);
 	}
 	closedir(directory);
 	return 0;
