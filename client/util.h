@@ -1,6 +1,8 @@
 #ifndef __UTIL_H__
 #define __UTIL_H__
 
+#include <stdlib.h>
+
 struct link_list {
 	int length;
 	struct node *head;

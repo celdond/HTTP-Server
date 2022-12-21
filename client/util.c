@@ -40,7 +40,7 @@ void delete_node(struct node *n) {
 void delete_list(struct link_list *l) {
 	int node_count = l->length;
 	struct node *n = l->head;
-	struct next = n->next;
+	struct node *next = n->next;
 
 	for (int i = 0; i < node_count; i++) {
 		delete_node(n);

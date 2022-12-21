@@ -8,6 +8,8 @@
 #include <dirent.h>
 #include <sys/types.h>
 
+#include "util.h"
+
 #define REQUESTS "./requests"
 #define FILES "./request_files"
 
