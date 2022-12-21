@@ -4,6 +4,7 @@
 struct link_list {
 	int length;
 	struct node *head;
+	struct node *tail;
 };
 
 struct node {
@@ -14,7 +15,7 @@ struct node {
 
 struct link_list *create_list();
 
-struct node *insert_node(struct node *n);
+struct node *insert_node(struct link_list *l);
 
 void delete_node(struct node *n);
 

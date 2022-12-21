@@ -7,11 +7,12 @@ struct link_list *create_list() {
 	}
 	l->length = 0;
 	l->head = NULL;
+	l->tail = NULL;
 
 	return l;
 }
 
-struct node *insert_node(struct node *n) {
+struct node *insert_node(struct link_list *l) {
 	struct node *new = (struct node *)calloc(1, sizeof(struct node));
         if (!new) {
                 return ((struct node *) NULL);
@@ -20,6 +21,7 @@ struct node *insert_node(struct node *n) {
 	new->file_name = NULL;
 	new->next = NULL;
 
-	n->next = new;
+	l->tail->next = new;
+	l->tail = new;
 	return new;
 }
