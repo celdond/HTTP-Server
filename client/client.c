@@ -33,7 +33,7 @@ int serve_requests(int conn) {
 		if (!f) {
 			err(EXIT_FAILURE, "Cannot access file");
 		}
-		while ((count = getline(&size, &buffer_size, f)) > 0) {
+		while ((count = getline(&buffer, &buffer_size, f)) > 0) {
 		
 		}
 		fclose(f);
