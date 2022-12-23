@@ -22,12 +22,19 @@ int serve_requests(int conn) {
 	if ((directory = opendir(REQUESTS)) == NULL) {
 		err(EXIT_FAILURE, "Cannot access required folder");
 	}
+
+	size_t buffer_size = 68;
+	size_t count = 0;
+	char *buffer = (char *)calloc(buffer_size, sizeof(char));
 	while ((d = readdir(directory)) != NULL) {
 		memset(filename, 0, 1024);
 		strcat(filename, "/");
 		f = fopen(d->d_name, "w");
 		if (!f) {
 			err(EXIT_FAILURE, "Cannot access file");
+		}
+		while ((count = getline(&size, &buffer_size, f)) > 0) {
+		
 		}
 		fclose(f);
 	}
