@@ -31,11 +31,9 @@ int serve_requests(int conn) {
 		strcat(filename, "/");
 		f = fopen(d->d_name, "w");
 		if (!f) {
-			err(EXIT_FAILURE, "Cannot access file");
+			break;
 		}
-		while ((count = getline(&buffer, &buffer_size, f)) > 0) {
-		
-		}
+		count = getline(&buffer, &buffer_size, f);
 		fclose(f);
 	}
 	closedir(directory);
