@@ -24,16 +24,24 @@ int serve_requests(int conn) {
 	}
 
 	size_t buffer_size = 68;
-	size_t count = 0;
+	ssize_t count = 0;
 	char *buffer = (char *)calloc(buffer_size, sizeof(char));
 	while ((d = readdir(directory)) != NULL) {
 		memset(filename, 0, 1024);
-		strcat(filename, "/");
-		f = fopen(d->d_name, "w");
+		strcat(filename, "./requests/");
+		strcat(filename, d->d_name);
+		f = fopen(filename, "r");
 		if (!f) {
 			break;
 		}
-		count = getline(&buffer, &buffer_size, f);
+		printf("%s\n", filename);
+		while (1) {
+			count = getline(&buffer, &buffer_size, f);
+			printf("%zd\n", count);
+			if (count < 3) {
+				break;
+			}
+		}
 		fclose(f);
 	}
 	closedir(directory);

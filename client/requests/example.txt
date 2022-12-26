@@ -1,2 +1,1 @@
-GET,try.txt
-
+GET,new.txt
