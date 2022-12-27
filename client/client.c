@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include <sys/types.h>
+#include <errno.h>
 
 #include "util.h"
 
@@ -30,14 +31,15 @@ int serve_requests(int conn) {
 		memset(filename, 0, 1024);
 		strcat(filename, "./requests/");
 		strcat(filename, d->d_name);
-		f = fopen(filename, "r");
+		f = fopen(filename, "r+");
 		if (!f) {
+			if (errno == EISDIR) {
+				continue;
+			}
 			break;
 		}
-		printf("%s\n", filename);
 		while (1) {
 			count = getline(&buffer, &buffer_size, f);
-			printf("%zd\n", count);
 			if (count < 3) {
 				break;
 			}
