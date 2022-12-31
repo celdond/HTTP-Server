@@ -22,6 +22,7 @@ int serve_requests(int conn) {
 	struct link_list *l = create_list();
 
 	if ((directory = opendir(REQUESTS)) == NULL) {
+		delete_list(l);
 		err(EXIT_FAILURE, "Cannot access required folder");
 	}
 
@@ -44,6 +45,14 @@ int serve_requests(int conn) {
 			if (count < 3) {
 				break;
 			}
+			ssize_t method_iterator = 0, buffer_iterator = 0;
+			char *method = (char *)calloc(5, sizeof(char));
+			while (buffer[buffer_iterator] != ',') {
+				method[method_iterator] = buffer[buffer_iterator];
+				method_iterator++;
+				buffer_iterator++;
+			}
+			free(method);
 		}
 		fclose(f);
 	}
