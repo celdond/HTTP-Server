@@ -19,6 +19,7 @@ int serve_requests(int conn) {
 	DIR *directory;
 	FILE *f;
 	char *filename = (char *)calloc(1024, sizeof(char));
+	struct link_list *l = create_list();
 
 	if ((directory = opendir(REQUESTS)) == NULL) {
 		err(EXIT_FAILURE, "Cannot access required folder");
@@ -47,6 +48,7 @@ int serve_requests(int conn) {
 		fclose(f);
 	}
 	closedir(directory);
+	delete_list(l);
 	return 0;
 }
 
