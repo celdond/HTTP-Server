@@ -52,7 +52,7 @@ int serve_requests(int conn) {
 				method_iterator++;
 				buffer_iterator++;
 			}
-			method[buffer_iterator] = '\0';
+			method[method_iterator] = '\0';
 			struct node *n = insert_node(l);
 			if (strcmp(method, "HEAD")) {
 				n->command = 'H';
@@ -66,6 +66,7 @@ int serve_requests(int conn) {
 					path[path_iterator] = buffer[buffer_iterator];
 					path_iterator++;
 					buffer_iterator++;
+					printf("%c", path[path_iterator - 1]);
 				}
 				n->file_name = path;
 			}
