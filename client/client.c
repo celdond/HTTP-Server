@@ -58,6 +58,17 @@ int serve_requests(int conn) {
 				n->command = 'H';
 			}
 
+			char *path = (char *)calloc(255, sizeof(char));
+			if (n->command != '0') {
+				buffer_iterator++;
+				ssize_t path_iterator = 0;
+				while (buffer[buffer_iterator] != '0') {
+					path[path_iterator] = buffer[buffer_iterator];
+					path_iterator++;
+					buffer_iterator++;
+				}
+				n->file_name = path;
+			}
 			free(method);
 		}
 		fclose(f);
