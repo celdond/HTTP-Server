@@ -52,6 +52,12 @@ int serve_requests(int conn) {
 				method_iterator++;
 				buffer_iterator++;
 			}
+			method[buffer_iterator] = '\0';
+			struct node *n = insert_node(l);
+			if (strcmp(method, "HEAD")) {
+				n->command = 'H';
+			}
+
 			free(method);
 		}
 		fclose(f);
