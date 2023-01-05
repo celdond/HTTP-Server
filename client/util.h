@@ -2,6 +2,7 @@
 #define __UTIL_H__
 
 #include <stdlib.h>
+#include <stdio.h>
 
 struct link_list {
 	int length;

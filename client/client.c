@@ -22,6 +22,7 @@ int serve_requests(int conn) {
 	struct link_list *l = create_list();
 
 	if ((directory = opendir(REQUESTS)) == NULL) {
+		free(filename);
 		delete_list(l);
 		err(EXIT_FAILURE, "Cannot access required folder");
 	}
@@ -57,6 +58,9 @@ int serve_requests(int conn) {
 			struct node *n = insert_node(l);
 			if (strcmp(method, "HEAD")) {
 				n->command = 'H';
+			} else {
+				free(method);
+				continue;
 			}
 
 			char *path = (char *)calloc(255, sizeof(char));
@@ -74,6 +78,8 @@ int serve_requests(int conn) {
 		}
 		fclose(f);
 	}
+	free(filename);
+	free(buffer);
 	closedir(directory);
 	delete_list(l);
 	return 0;
