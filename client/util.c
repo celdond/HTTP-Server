@@ -21,7 +21,12 @@ struct node *insert_node(struct link_list *l) {
 	new->file_name = NULL;
 	new->next = NULL;
 
-	l->tail->next = new;
+	if (l->tail) {
+		l->tail->next = new;
+	}
+	else {
+		l->head = new;
+	}	
 	l->tail = new;
 	l->length += 1;
 
@@ -39,14 +44,23 @@ void delete_node(struct node *n) {
 
 void delete_list(struct link_list *l) {
 	int node_count = l->length;
+	l->length = 0;
+	l->tail = NULL;
 	struct node *n = l->head;
-	struct node *next = n->next;
+	if (!n) {
+		free(l);
+		return;
+	}
 
+	struct node *next = n->next;
 	for (int i = 0; i < node_count; i++) {
 		delete_node(n);
 		n = next;
-		next = n->next;
+		if (n) {
+			next = n->next;
+		}
 	}
+	l->head = NULL;
 	free(l);
 	return;
 }

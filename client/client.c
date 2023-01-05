@@ -41,6 +41,7 @@ int serve_requests(int conn) {
 			break;
 		}
 		while (1) {
+			memset(buffer, 0, buffer_size);
 			count = getline(&buffer, &buffer_size, f);
 			if (count < 3) {
 				break;
@@ -66,7 +67,6 @@ int serve_requests(int conn) {
 					path[path_iterator] = buffer[buffer_iterator];
 					path_iterator++;
 					buffer_iterator++;
-					printf("%c", path[path_iterator - 1]);
 				}
 				n->file_name = path;
 			}

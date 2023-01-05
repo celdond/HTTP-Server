@@ -1,1 +1,1 @@
-GET,new.txt
+HEAD,new.txt
