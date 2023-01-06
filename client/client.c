@@ -81,6 +81,13 @@ int serve_requests(int conn) {
 	free(filename);
 	free(buffer);
 	closedir(directory);
+
+	struct node *file_iterator = l->head;
+	while(file_iterator) {
+		// Do Request
+		file_iterator = file_iterator->next;
+	}
+
 	delete_list(l);
 	return 0;
 }
