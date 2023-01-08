@@ -15,6 +15,7 @@
 #define FILES "./request_files"
 
 void head_client(int conn, char *file_name) {
+
 	return;
 }
 
