@@ -24,6 +24,4 @@ void delete_node(struct node *n);
 
 void delete_list(struct link_list *l);
 
-void send_message(int connfd, int mess_num, char *message, ssize_t size);
-
 #endif
