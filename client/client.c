@@ -14,6 +14,10 @@
 #define REQUESTS "./requests"
 #define FILES "./request_files"
 
+void head_client(int conn, char *file_name) {
+	return;
+}
+
 int serve_requests(int conn) {
 	struct dirent *d;
 	DIR *directory;
@@ -85,6 +89,9 @@ int serve_requests(int conn) {
 	struct node *file_iterator = l->head;
 	while(file_iterator) {
 		// Do Request
+		if (file_iterator->command == 'H') {
+			head_client(conn, file_iterator->file_name);
+		}
 		file_iterator = file_iterator->next;
 	}
 
