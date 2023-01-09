@@ -2,6 +2,7 @@
 #include <arpa/inet.h>
 #include <err.h>
 #include <string.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <ctype.h>
@@ -43,9 +44,8 @@ int main (int argc, char *argv[]) {
 
 	while (1) {
 		int connection = accept(listen, NULL, NULL);
-		char buf[1];
-		recv(connection, buf, 1, 0);
-		write(1, buf, 1);
+		printf("got him\n");
+		close(connection);
 	}
 	
 	return EXIT_SUCCESS;
