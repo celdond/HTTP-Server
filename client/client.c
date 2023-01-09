@@ -14,31 +14,21 @@
 #define REQUESTS "./requests"
 #define FILES "./request_files"
 
-void send_message(int connfd, int mess_num, char *message, ssize_t size) {
+void send_request(int conn, char *method, char *file_name) {
     char *pack = (char *) calloc(100, sizeof(char));
     if (!(pack)) {
         return;
     }
-    int s = 0;
-    if (size == 0) {
-        s = snprintf(pack, 100, "HTTP/1.1 %d %s\r\nContent-Length: %lu\r\n\r\n%s\n", mess_num,
-            message, strlen(message) + 1, message);
-    } else {
-        s = snprintf(
-            pack, 100, "HTTP/1.1 %d %s\r\nContent-Length: %lu\r\n\r\n", mess_num, message, size);
-    }
-    if (s <= 0) {
-        free(pack);
-        return;
-    }
+    ssize_t s = 0;
+    s = snprintf(pack, 100, "%s /%s HTTP/1.1\r\n\r\n", method, file_name);
 
-    send(connfd, pack, s, 0);
+    send(conn, pack, s, 0);
     free(pack);
     return;
 }
 
 void head_client(int conn, char *file_name) {
-
+	send_request(conn, "HEAD", file_name);
 	return;
 }
 
@@ -111,14 +101,19 @@ int serve_requests(int conn) {
 	closedir(directory);
 
 	struct node *file_iterator = l->head;
+	char *response = (char *)calloc(1024, sizeof(char));
+	ssize_t in = 0;
 	while(file_iterator) {
-		// Do Request
 		if (file_iterator->command == 'H') {
 			head_client(conn, file_iterator->file_name);
 		}
+		while((in = recv(conn, response, 1024, 0)) > 0) {
+                	printf("%s", response);
+        	}
 		file_iterator = file_iterator->next;
 	}
 
+	free(response);
 	delete_list(l);
 	return 0;
 }
