@@ -12,7 +12,7 @@
 void handle_request(int client_connection) {
 	char *buffer = (char *)calloc(1024, sizeof(char));
 	char *method = (char *)calloc(8, sizeof(char));
-	char *path = (char *)calloc(512, sizeof(char));
+	char *file = (char *)calloc(255, sizeof(char));
 	ssize_t i = 0;
 	ssize_t j = 0;
 	ssize_t size;
