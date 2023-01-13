@@ -7,6 +7,22 @@
 #include <unistd.h>
 #include <ctype.h>
 
+#include "server.h"
+
+void handle_request(int client_connection) {
+	char *buffer = (char *)calloc(1024, sizeof(char));
+	char *method = (char *)calloc(255, sizeof(char));
+	char *path = (char *)calloc(512, sizeof(char));
+	ssize_t i, j, size;
+
+	size = reader(client_connection, buffer, 1024);
+
+	free(buffer);
+	free(method);
+	free(path);
+	return;
+}
+
 static int create_socket(int input_port) {
 	int sock = socket(AF_INET, SOCK_STREAM, 0);
 	if (sock < 0) {
@@ -44,7 +60,7 @@ int main (int argc, char *argv[]) {
 
 	while (1) {
 		int connection = accept(listen, NULL, NULL);
-		printf("got him\n");
+		
 		close(connection);
 	}
 	
