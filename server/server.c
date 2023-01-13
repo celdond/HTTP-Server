@@ -5,12 +5,12 @@ ssize_t reader(int connection_port, char *buffer, ssize_t size) {
 	char terminate = '\0';
 	ssize_t read = 0;
 
-	while ((i < size - 1) && (c != '\n')) {
+	while ((i < size - 1) && (terminate != '\n')) {
 		read = recv(connection_port, &terminate, 1, 0);
 		if (read > 0) {
-			if (c == '\r') {
+			if (terminate == '\r') {
 				read = recv(connection_port, &terminate, 1, MSG_PEEK);
-				if ((read > 0) && (c == '\n')) {
+				if ((read > 0) && (terminate == '\n')) {
 					recv(connection_port, &terminate, 1, 0);
 				} else {
 					terminate = '\n';
