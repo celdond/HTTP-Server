@@ -11,11 +11,19 @@
 
 void handle_request(int client_connection) {
 	char *buffer = (char *)calloc(1024, sizeof(char));
-	char *method = (char *)calloc(255, sizeof(char));
+	char *method = (char *)calloc(8, sizeof(char));
 	char *path = (char *)calloc(512, sizeof(char));
-	ssize_t i, j, size;
+	ssize_t i = 0;
+	ssize_t j = 0;
+	ssize_t size;
 
 	size = reader(client_connection, buffer, 1024);
+	while(isspace((int)(buffer[i])) && (j < 6)) {
+		method[j] = buffer[i];
+		i++;
+		j++;
+	}
+	method[j] = '\0';
 
 	free(buffer);
 	free(method);
