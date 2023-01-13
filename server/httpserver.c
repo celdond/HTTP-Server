@@ -25,6 +25,15 @@ void handle_request(int client_connection) {
 	}
 	method[j] = '\0';
 
+	if (strcmp(method, "HEAD")) {
+		// Handle Head Request
+	} else {
+		free(buffer);
+		free(method);
+		free(path);
+		return;
+	}
+
 	free(buffer);
 	free(method);
 	free(path);
