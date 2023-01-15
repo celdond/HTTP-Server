@@ -20,7 +20,7 @@ void send_request(int conn, char *method, char *file_name) {
         return;
     }
     ssize_t s = 0;
-    s = snprintf(pack, 100, "%s /%s HTTP/1.1\r\n\r\n", method, file_name);
+    s = snprintf(pack, 100, "%s /%s HTTP/1.0\r\n\r\n", method, file_name);
 
     send(conn, pack, s, 0);
     free(pack);
