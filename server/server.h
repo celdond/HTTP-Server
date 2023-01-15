@@ -3,11 +3,14 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 
 ssize_t reader(int connection_port, char *buffer, ssize_t size);
 
-void head(int connection_port, char *buffer);
+void head(int connfd, char *buffer);
+
+void send_message(int connfd, int mess_num, char *message, ssize_t size);
 
 #endif
