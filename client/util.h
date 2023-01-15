@@ -1,19 +1,19 @@
 #ifndef __UTIL_H__
 #define __UTIL_H__
 
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 struct link_list {
-	int length;
-	struct node *head;
-	struct node *tail;
+  int length;
+  struct node *head;
+  struct node *tail;
 };
 
 struct node {
-	char command;
-	char *file_name;
-	struct node *next;
+  char command;
+  char *file_name;
+  struct node *next;
 };
 
 struct link_list *create_list();

@@ -25,19 +25,19 @@ void handle_request(int connfd) {
 	}
 	method[j] = '\0';
 
-	j = 7;
+	j = 6;
 	while(isspace((int)(buffer[i])) && (i < 1024)) {
 		i++;
 	}
 
-	strncpy(path, "./files", 7);
+	strncpy(path, "/files", 6);
 
 	while(!isspace((int)(buffer[i])) && (j < 254) && (i < size)) {
 		path[j] = buffer[i];
 		i++;
 		j++;
 	}
-	path[i] = '\0';
+	path[j] = '\0';
 
 	if (strcmp(method, "HEAD")) {
 		head(connfd, path);
@@ -91,7 +91,7 @@ int main (int argc, char *argv[]) {
 
 	while (1) {
 		int connection = accept(listen, NULL, NULL);
-		
+		handle_request(connection);
 		close(connection);
 	}
 	
