@@ -1,5 +1,37 @@
 #include "server.h"
 
+ssize_t file_size(int filefd) {
+    struct stat *stat_log = (struct stat *) calloc(1, sizeof(struct stat));
+    if (!(stat_log)) {
+        return -1;
+    }
+    if (fstat(filefd, stat_log) != 0) {
+        free(stat_log);
+        return -1;
+    }
+    if (!(S_ISREG(stat_log->st_mode))) {
+        free(stat_log);
+        return -2;
+    }
+    ssize_t size = stat_log->st_size;
+    free(stat_log);
+    return size;
+}
+
+int file_check(char *file, int connfd) {
+    if (access(file, F_OK) != 0) {
+        if (errno == EACCES) {
+            send_message(connfd, 403, "Forbidden", 0);
+        } else if (errno == ENOENT) {
+            send_message(connfd, 404, "File Not Found", 0);
+        } else {
+            send_message(connfd, 500, "Internal Server Error", 0);
+        }
+        return -1;
+    }
+    return 1;
+}
+
 ssize_t reader(int connection_port, char *buffer, ssize_t size) {
 	ssize_t i = 0;
 	char terminate = '\0';
