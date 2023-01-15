@@ -59,6 +59,27 @@ ssize_t reader(int connection_port, char *buffer, ssize_t size) {
 }
 
 void head(int connfd, char *file_name) {
+	if (file_check(file_name, connfd) < 0) {
+    	    return;
+    	}
+    	int filefd = open(file_name, O_RDONLY);
+    	if (filefd == -1) {
+    	    send_message(connfd, 403, "Forbidden", 0);
+    	    return;
+    	}
+    	ssize_t size = file_size(filefd);
+    	if (size == -1) {
+        	send_message(connfd, 500, "Internal Server Error", 0);
+        	close(filefd);
+        	return;
+    	} else if (size < -1) {
+        	send_message(connfd, 403, "Forbidden", 0);
+        	close(filefd);
+        	return;
+    	}
+
+	send_message(connfd, 200, "OK", size);
+	close(filefd);
 	return;
 }
 
