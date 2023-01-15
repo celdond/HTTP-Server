@@ -9,7 +9,7 @@
 
 #include "server.h"
 
-void handle_request(int client_connection) {
+void handle_request(int connfd) {
 	char *buffer = (char *)calloc(1024, sizeof(char));
 	char *method = (char *)calloc(8, sizeof(char));
 	char *path = (char *)calloc(255, sizeof(char));
@@ -17,7 +17,7 @@ void handle_request(int client_connection) {
 	ssize_t j = 0;
 	ssize_t size;
 
-	size = reader(client_connection, buffer, 1024);
+	size = reader(connfd, buffer, 1024);
 	while(!isspace((int)(buffer[i])) && (j < 6) && (i < size)) {
 		method[j] = buffer[i];
 		i++;
@@ -25,12 +25,14 @@ void handle_request(int client_connection) {
 	}
 	method[j] = '\0';
 
-	j = 0;
+	j = 7;
 	while(isspace((int)(buffer[i])) && (i < 1024)) {
 		i++;
 	}
 
-	while(!isspace((int)(buffer[i])) && (j < 247) && (i < size)) {
+	strncpy(path, "./files", 7);
+
+	while(!isspace((int)(buffer[i])) && (j < 254) && (i < size)) {
 		path[j] = buffer[i];
 		i++;
 		j++;
@@ -38,7 +40,7 @@ void handle_request(int client_connection) {
 	path[i] = '\0';
 
 	if (strcmp(method, "HEAD")) {
-		// Handle Head Request
+		head(connfd, path);
 	} else {
 		free(buffer);
 		free(method);
