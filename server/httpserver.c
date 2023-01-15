@@ -39,7 +39,8 @@ void handle_request(int connfd) {
 	}
 	path[j] = '\0';
 
-	if (strcmp(method, "HEAD")) {
+
+	if (strncmp(method, "HEAD", 4) == 0) {
 		head(connfd, path);
 	} else {
 		free(buffer);
