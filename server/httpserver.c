@@ -12,18 +12,30 @@
 void handle_request(int client_connection) {
 	char *buffer = (char *)calloc(1024, sizeof(char));
 	char *method = (char *)calloc(8, sizeof(char));
-	char *file = (char *)calloc(255, sizeof(char));
+	char *path = (char *)calloc(255, sizeof(char));
 	ssize_t i = 0;
 	ssize_t j = 0;
 	ssize_t size;
 
 	size = reader(client_connection, buffer, 1024);
-	while(isspace((int)(buffer[i])) && (j < 6)) {
+	while(!isspace((int)(buffer[i])) && (j < 6) && (i < size)) {
 		method[j] = buffer[i];
 		i++;
 		j++;
 	}
 	method[j] = '\0';
+
+	j = 0;
+	while(isspace((int)(buffer[i])) && (i < 1024)) {
+		i++;
+	}
+
+	while(!isspace((int)(buffer[i])) && (j < 247) && (i < size)) {
+		path[j] = buffer[i];
+		i++;
+		j++;
+	}
+	path[i] = '\0';
 
 	if (strcmp(method, "HEAD")) {
 		// Handle Head Request
