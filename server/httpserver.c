@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <ctype.h>
+#include <pthread.h>
 
 #include "server.h"
 
@@ -106,8 +107,19 @@ int main (int argc, char *argv[]) {
         if (connection_port <= 0 || *s != '\0') {
                 err(EXIT_FAILURE, "Invalid Port");
         }
+	
+	struct threa *thread_storage = create_thread_sheet(threads, 1024);
+	if (thread_storage == NULL) {
+		return EXIT_FAILURE;
+	}
+
+	signal(SIGPIPE, SIG_IGN);
+	signal(SIGTERM, sigterm_handler);
+	signal(SIGINT, sigterm_handler);
+
 	int listen = create_socket(connection_port);
 
+	pthread_t thread
 	while (1) {
 		int connection = accept(listen, NULL, NULL);
 		handle_request(connection);
