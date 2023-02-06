@@ -9,6 +9,9 @@
 
 #include "server.h"
 
+#define OPTIONS "t:"
+#define DEFAULT 1
+
 void handle_request(int connfd) {
 	char *buffer = (char *)calloc(1024, sizeof(char));
 	char *method = (char *)calloc(8, sizeof(char));
@@ -79,12 +82,27 @@ static int create_socket(int input_port) {
 }
 
 int main (int argc, char *argv[]) {
+	int op = 0;
+	int threads = DEFAULT;
+	while ((op = getopt(argc, argv, OPTIONS)) != -1) {
+		switch (op) {
+		case 't':
+			threads = strtol(optarg, NULL, 10);
+			if (threads <= 0) {
+				errx(EXIT_FAILURE, "bad number of threads");
+			}
+			break;
+		default:
+			errx(EXIT_FAILURE, "Invalid parameter");
+		}
+	}
+
+	if (optind >= argc) {
+		errx(EXIT_FAILURE, "Wrong number of parameters");
+	}
 	int connection_port;
-        if (argc != 2) {
-                err(EXIT_FAILURE, "Too many input parameters.");
-        }
         char *s;
-        connection_port = strtol(argv[1], &s, 10);
+        connection_port = strtol(argv[optind], &s, 10);
         if (connection_port <= 0 || *s != '\0') {
                 err(EXIT_FAILURE, "Invalid Port");
         }
