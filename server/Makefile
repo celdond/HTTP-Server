@@ -16,4 +16,4 @@ drone.o		:drone.c drone.h
 	$(CC) -c drone.c drone.h
 
 clean:
-	rm -rf httpserver httpserver.o server.o drone.o server.h.gch
+	rm -rf httpserver httpserver.o server.o drone.o server.h.gch drone.h.gch
