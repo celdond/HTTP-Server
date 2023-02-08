@@ -175,15 +175,17 @@ int main (int argc, char *argv[]) {
 	if (thread_storage == NULL) {
 		return EXIT_FAILURE;
 	}
+	thread_op = thread_storage;
 
 	signal(SIGPIPE, SIG_IGN);
 	signal(SIGTERM, sigterm_handler);
 	signal(SIGINT, sigterm_handler);
 
-	int listen = create_socket(connection_port);
+	int listenfd = create_socket(connection_port);
 
 	pthread_t thread_temp[threads];
 	thread_list = thread_temp;
+	int rc = 0;
 	for (int iter = 0; iter < threads; iter++) {
         	rc = pthread_create(&(thread_temp[iter]), NULL, consumers, thread_storage) != 0;
         	if (rc != 0) {
