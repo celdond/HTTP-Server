@@ -145,6 +145,34 @@ void producer(int listenfd, struct threa *t) {
 	return;
 }
 
+void *consumers(void *thread_storage) {
+    int connfd;
+    struct threa *t = thread_storage;
+    while (1) {
+        if (pthread_mutex_lock(&pc_lock) != 0) {
+            perror("Mutex Error");
+            continue;
+        }
+
+        while (t->count == 0) {
+            pthread_cond_wait(&empty_sig, &pc_lock);
+        }
+        connfd = t->work_buffer[t->out];
+        t->out = (t->out + 1) % t->max_count;
+        t->count -= 1;
+        pthread_cond_signal(&full_sig);
+
+        pthread_mutex_unlock(&pc_lock);
+
+        if (connfd < 0) {
+            return NULL;
+        }
+
+        handle_request(connfd);
+        close(connfd);
+    }
+}
+
 int main (int argc, char *argv[]) {
 	int op = 0;
 	int threads = DEFAULT;
