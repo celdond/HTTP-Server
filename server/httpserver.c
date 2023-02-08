@@ -181,11 +181,17 @@ int main (int argc, char *argv[]) {
 	signal(SIGINT, sigterm_handler);
 
 	int listen = create_socket(connection_port);
-	while (1) {
-		int connection = accept(listen, NULL, NULL);
-		handle_request(connection);
-		close(connection);
-	}
+
+	pthread_t thread_temp[threads];
+	thread_list = thread_temp;
+	for (int iter = 0; iter < threads; iter++) {
+        	rc = pthread_create(&(thread_temp[iter]), NULL, consumers, thread_storage) != 0;
+        	if (rc != 0) {
+            		return EXIT_FAILURE;
+        	}
+    	}
+
+    	producer(listenfd, thread_storage);
 	
 	return EXIT_SUCCESS;
 }
