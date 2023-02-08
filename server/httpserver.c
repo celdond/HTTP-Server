@@ -7,11 +7,49 @@
 #include <unistd.h>
 #include <ctype.h>
 #include <pthread.h>
+#include <signal.h>
 
+#include "drone.h"
 #include "server.h"
 
 #define OPTIONS "t:"
 #define DEFAULT 1
+
+pthread_mutex_t pc_lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t empty_sig = PTHREAD_COND_INITIALIZER;
+pthread_cond_t full_sig = PTHREAD_COND_INITIALIZER;
+
+static void sigterm_handler(int sig) {
+	if (sig == SIGTERM || sig == SIGINT) {
+
+        	for (int i = 0; i < thread_op->thread_count; i++) {
+            		if (pthread_mutex_lock(&pc_lock) != 0) {
+                		perror("Mutex Error");
+                		continue;
+            		}
+            		while (thread_op->count == thread_op->max_count) {
+                		pthread_cond_wait(&full_sig, &pc_lock);
+            		}
+            		thread_op->work_buffer[thread_op->in] = -1;
+            		thread_op->in = (thread_op->in + 1) % thread_op->max_count;
+            		thread_op->count += 1;
+            		pthread_cond_signal(&empty_sig);
+
+            		pthread_mutex_unlock(&pc_lock);
+        	}
+
+        	void *data;
+        	for (int i = 0; i < thread_op->thread_count; i++) {
+            		pthread_join(thread_list[i], &data);
+            		if (data != NULL) {
+                		free(data);
+            		}
+        	}
+
+        free_threa(thread_op);
+        exit(EXIT_SUCCESS);
+    }
+}
 
 void handle_request(int connfd) {
 	char *buffer = (char *)calloc(1024, sizeof(char));
@@ -82,6 +120,31 @@ static int create_socket(int input_port) {
 	return sock;
 }
 
+void producer(int listenfd, struct threa *t) {
+	int connfd;
+	while (1) {
+		connfd = accept(listenfd, NULL, NULL);
+        	if (connfd < 0) {
+        	    perror("accept error");
+        	    continue;
+        	}
+        	if (pthread_mutex_lock(&pc_lock) != 0) {
+        	    perror("Mutex Error");
+        	    continue;
+        	}
+        	while (t->count == t->max_count) {
+        	    pthread_cond_wait(&full_sig, &pc_lock);
+        	}
+        	t->work_buffer[t->in] = connfd;
+        	t->in = (t->in + 1) % t->max_count;
+        	t->count += 1;
+        	pthread_cond_signal(&empty_sig);
+
+        	pthread_mutex_unlock(&pc_lock);
+	}
+	return;
+}
+
 int main (int argc, char *argv[]) {
 	int op = 0;
 	int threads = DEFAULT;
@@ -118,8 +181,6 @@ int main (int argc, char *argv[]) {
 	signal(SIGINT, sigterm_handler);
 
 	int listen = create_socket(connection_port);
-
-	pthread_t thread
 	while (1) {
 		int connection = accept(listen, NULL, NULL);
 		handle_request(connection);

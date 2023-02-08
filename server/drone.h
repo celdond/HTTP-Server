@@ -3,6 +3,8 @@
 
 struct threa *thread_op;
 
+pthread_t *thread_list;
+
 struct threa {
 	int *work_buffer;
 	int in;
