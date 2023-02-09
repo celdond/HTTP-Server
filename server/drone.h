@@ -1,6 +1,8 @@
 #ifndef __DRONE_H__
 #define __DRONE_H__
 
+#include <stdio.h>
+#include <stdlib.h>
 #include <pthread.h>
 
 struct threa *thread_op;

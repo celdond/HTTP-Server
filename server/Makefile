@@ -1,4 +1,4 @@
-CFLAGS = -Wall -Wextra -pedantic -Wshadow
+CFLAGS = -Wall -Wextra -pedantic -Wshadow -pthread
 CC = clang $(CFLAGS)
 
 all		:httpserver
