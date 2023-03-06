@@ -83,10 +83,11 @@ void head(int connfd, char *file_name) {
 	return;
 }
 
-void get_file(int connfd, char *file_name, char *buffer) {
+void get_file(int connfd, char *file_name) {
     if (file_check(file_name, connfd) < 0) {
             return;
     }
+    char *buffer = (char *)calloc(4096, sizeof(char));
     int filefd = open(file_name, O_RDONLY);
     if (filefd == -1) {
         send_message(connfd, 403, "Forbidden", 0);
