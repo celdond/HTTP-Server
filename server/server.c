@@ -83,6 +83,43 @@ void head(int connfd, char *file_name) {
 	return;
 }
 
+void get_file(int connfd, char *file_name, char *buffer) {
+    if (file_check(file_name, connfd) < 0) {
+            return;
+    }
+    int filefd = open(file_name, O_RDONLY);
+    if (filefd == -1) {
+        send_message(connfd, 403, "Forbidden", 0);
+        return;
+    }
+    ssize_t size = file_size(filefd);
+    if (size == -1) {
+        send_message(connfd, 500, "Internal Server Error", 0);
+        close(filefd);
+        return;
+    } else if (size < -1) {
+        send_message(connfd, 403, "Forbidden", 0);
+        close(filefd);
+        return;
+    }
+
+    ssize_t i = size;
+
+    send_message(connfd, 200, "OK", size);
+    ssize_t read_b;
+    while (i > 0) {
+        read_b = read(filefd, buffer, 4096);
+        i -= read_b;
+        if (send(connfd, buffer, read_b, 0) < 0) {
+            close(filefd);
+            return;
+        }
+    }
+
+    close(filefd);
+    return;
+}
+
 void send_message(int connfd, int mess_num, char *message, ssize_t size) {
     char *pack = (char *) calloc(100, sizeof(char));
     if (!(pack)) {
