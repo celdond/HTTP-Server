@@ -34,6 +34,11 @@ void head_client(int conn, char *file_name) {
   return;
 }
 
+void get_client(int conn, char *file_name) {
+	send_request(conn, "GET", file_name);
+	return;
+}
+
 int serve_requests(int conn) {
   struct dirent *d;
   DIR *directory;
@@ -78,6 +83,8 @@ int serve_requests(int conn) {
       struct node *n = insert_node(l);
       if (strncmp(method, "HEAD", 4) == 0) {
         n->command = 'H';
+      } else if (strncmp(method, "GET", 3) == 0) {
+	n->command = 'G';
       } else {
         free(method);
         continue;
@@ -108,6 +115,8 @@ int serve_requests(int conn) {
   while (file_iterator != NULL) {
     if (file_iterator->command == 'H') {
       head_client(conn, file_iterator->file_name);
+    } else if (file_iterator->command == 'G') {
+	    get_client(conn, file_iterator->file_name);
     } else {
       file_iterator = file_iterator->next;
     }
