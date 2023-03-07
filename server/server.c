@@ -91,16 +91,19 @@ void get_file(int connfd, char *file_name) {
     int filefd = open(file_name, O_RDONLY);
     if (filefd == -1) {
         send_message(connfd, 403, "Forbidden", 0);
+	free(buffer);
         return;
     }
     ssize_t size = file_size(filefd);
     if (size == -1) {
         send_message(connfd, 500, "Internal Server Error", 0);
         close(filefd);
+	free(buffer);
         return;
     } else if (size < -1) {
         send_message(connfd, 403, "Forbidden", 0);
         close(filefd);
+	free(buffer);
         return;
     }
 
@@ -113,11 +116,13 @@ void get_file(int connfd, char *file_name) {
         i -= read_b;
         if (send(connfd, buffer, read_b, 0) < 0) {
             close(filefd);
+	    free(buffer);
             return;
         }
     }
 
     close(filefd);
+    free(buffer);
     return;
 }
 
