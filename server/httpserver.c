@@ -84,7 +84,7 @@ void handle_request(int connfd) {
 
 	if (strncmp(method, "HEAD", 4) == 0) {
 		head(connfd, path);
-	} else if () {
+	} else if (strncmp(method, "GET", 3) == 0) {
 		get_file(connfd, path);
 	} else {
 		free(buffer);
