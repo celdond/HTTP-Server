@@ -8,11 +8,31 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 #include "util.h"
 
 #define REQUESTS "./requests"
 #define FILES "./request_files"
+
+static int create_client_socket(int connection_port) {
+  int sock = socket(AF_INET, SOCK_STREAM, 0);
+  if (sock < 0) {
+    err(EXIT_FAILURE, "Socket Failure");
+  }
+  struct sockaddr_in server_addr;
+
+  memset(&server_addr, 0, sizeof(server_addr));
+  server_addr.sin_family = AF_INET;
+  server_addr.sin_addr.s_addr = htons(INADDR_ANY);
+  server_addr.sin_port = htons(connection_port);
+
+  if (connect(sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
+    err(EXIT_FAILURE, "Socket could not bind.");
+  }
+
+  return sock;
+}
 
 void send_request(int conn, char *method, char *file_name) {
   char *pack = (char *)calloc(100, sizeof(char));
@@ -30,12 +50,16 @@ void send_request(int conn, char *method, char *file_name) {
 }
 
 void head_client(int conn, char *file_name) {
-  send_request(conn, "HEAD", file_name);
+	int connection = create_client_socket(conn);
+  send_request(connection, "HEAD", file_name);
+  close(connection);
   return;
 }
 
 void get_client(int conn, char *file_name) {
+	int connection = create_client_socket(conn);
 	send_request(conn, "GET", file_name);
+	close(connection);
 	return;
 }
 
@@ -131,36 +155,15 @@ int serve_requests(int conn) {
   return 0;
 }
 
-static int create_client_socket(int connection_port) {
-  int sock = socket(AF_INET, SOCK_STREAM, 0);
-  if (sock < 0) {
-    err(EXIT_FAILURE, "Socket Failure");
-  }
-  struct sockaddr_in server_addr;
-
-  memset(&server_addr, 0, sizeof(server_addr));
-  server_addr.sin_family = AF_INET;
-  server_addr.sin_addr.s_addr = htons(INADDR_ANY);
-  server_addr.sin_port = htons(connection_port);
-
-  if (connect(sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
-    err(EXIT_FAILURE, "Socket could not bind.");
-  }
-
-  return sock;
-}
-
 int main(int argc, char *argv[]) {
-  int connection_port;
   if (argc != 2) {
     err(EXIT_FAILURE, "Too many input parameters.");
   }
   char *s;
-  connection_port = strtol(argv[1], &s, 10);
-  if (connection_port <= 0 || *s != '\0') {
+  int port = strtol(argv[1], &s, 10);
+  if (port <= 0 || *s != '\0') {
     err(EXIT_FAILURE, "Invalid Port");
   }
-  int connection = create_client_socket(connection_port);
-  serve_requests(connection);
+  serve_requests(port);
   return 0;
 }
