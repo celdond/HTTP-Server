@@ -1,4 +1,5 @@
 HEAD,new.txt
 HEAD,new.txt
 HEAD,new.txt
+GET,new.txt
 

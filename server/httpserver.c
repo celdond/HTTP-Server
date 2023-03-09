@@ -95,14 +95,15 @@ void handle_request(int connfd) {
         }
         version[x] = '\0';
 
-	if (strncmp(version, "HTTP/1.0", 8) != 0) {
-		free(version);
-		free(buffer);
-		free(method);
-		free(path);
-		return;
-	}
+	//if (strncmp(version, "HTTP/1.0", 8) != 0) {
+	//	free(version);
+	//	free(buffer);
+	//	free(method);
+	//	free(path);
+	//	return;
+	//}
 
+	free(version);
 	if (strncmp(method, "HEAD", 4) == 0) {
 		head(connfd, path);
 	} else if (strncmp(method, "GET", 3) == 0) {

@@ -39,10 +39,10 @@ void send_request(int conn, char *method, char *file_name) {
   if (!(pack)) {
     return;
   }
-  ssize_t s = 0;
-  s = snprintf(pack, 100, "%s /%s HTTP/1.0\r\n\r\n", method, file_name);
 
-  if (send(conn, pack, s, 0) == -1) {
+  snprintf(pack, 100, "%s /%s HTTP/1.0\r\n\r\n", method, file_name);
+
+  if (send(conn, pack, 100, 0) == -1) {
     perror("Send Error\n");
   }
   free(pack);
@@ -50,16 +50,12 @@ void send_request(int conn, char *method, char *file_name) {
 }
 
 void head_client(int conn, char *file_name) {
-	int connection = create_client_socket(conn);
-  send_request(connection, "HEAD", file_name);
-  close(connection);
+  send_request(conn, "HEAD", file_name);
   return;
 }
 
 void get_client(int conn, char *file_name) {
-	int connection = create_client_socket(conn);
 	send_request(conn, "GET", file_name);
-	close(connection);
 	return;
 }
 
@@ -118,11 +114,12 @@ int serve_requests(int conn) {
       if (n->command != '0') {
         buffer_iterator++;
         ssize_t path_iterator = 0;
-        while ((buffer[buffer_iterator] != '\0') && (buffer_iterator < 255)) {
+        while (((buffer[buffer_iterator] != '\n') && (buffer[buffer_iterator] != '\0')) && (buffer_iterator < 255)) {
           path[path_iterator] = buffer[buffer_iterator];
           path_iterator++;
           buffer_iterator++;
         }
+
         n->file_name = path;
       }
       free(method);
@@ -137,16 +134,18 @@ int serve_requests(int conn) {
   char *response = (char *)calloc(1024, sizeof(char));
   ssize_t in = 0;
   while (file_iterator != NULL) {
+	int connection = create_client_socket(conn);
     if (file_iterator->command == 'H') {
-      head_client(conn, file_iterator->file_name);
+      head_client(connection, file_iterator->file_name);
     } else if (file_iterator->command == 'G') {
-	    get_client(conn, file_iterator->file_name);
+	    get_client(connection, file_iterator->file_name);
     } else {
       file_iterator = file_iterator->next;
     }
-    while ((in = recv(conn, response, 1024, 0)) > 0) {
+    while ((in = recv(connection, response, 1024, 0)) > 0) {
       printf("%s", response);
     }
+    close(connection);
     file_iterator = file_iterator->next;
   }
 
