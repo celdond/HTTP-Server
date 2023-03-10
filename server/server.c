@@ -54,6 +54,9 @@ ssize_t reader(int connection_port, char *buffer, ssize_t size) {
 			terminate = '\n';
 		}
 	}
+	if (buffer[0] == '\r') {
+		return 0;
+	}
 	buffer[i] = '\0';
 	return i;
 }

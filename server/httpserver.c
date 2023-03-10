@@ -104,6 +104,11 @@ void handle_request(int connfd) {
 	}
 
 	free(version);
+
+	while((size = reader(connfd, buffer, 1024)) > 0) {
+		printf("%s\n", buffer);
+	}
+
 	if (strncmp(method, "HEAD", 4) == 0) {
 		head(connfd, path);
 	} else if (strncmp(method, "GET", 3) == 0) {
