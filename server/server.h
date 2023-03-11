@@ -17,6 +17,8 @@ void head(int connfd, char *file_name);
 
 void get_file(int connfd, char *file_name);
 
+void put_file(int connfd, char *file_name, ssize_t size);
+
 void send_message(int connfd, int mess_num, char *message, ssize_t size);
 
 #endif

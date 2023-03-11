@@ -40,14 +40,6 @@ ssize_t reader(int connection_port, char *buffer, ssize_t size) {
 	while ((i < size - 1) && (terminate != '\n')) {
 		read = recv(connection_port, &terminate, 1, 0);
 		if (read > 0) {
-			if (terminate == '\r') {
-				read = recv(connection_port, &terminate, 1, MSG_PEEK);
-				if ((read > 0) && (terminate == '\n')) {
-					recv(connection_port, &terminate, 1, 0);
-				} else {
-					terminate = '\n';
-				}
-			}
 			buffer[i] = terminate;
 			i++;
 		} else {
@@ -126,6 +118,41 @@ void get_file(int connfd, char *file_name) {
 
     close(filefd);
     free(buffer);
+    return;
+}
+
+void put_file(int connfd, char *file_name, ssize_t size) {
+    int result_message = 200;
+    if (access(file_name, F_OK) != 0) {
+        if (errno == EACCES) {
+            send_message(connfd, 403, "Forbidden", 0);
+            return;
+        } else if (errno == ENOENT) {
+            result_message = 201;
+        }
+    }
+
+    int filefd = open(file_name, O_CREAT | O_WRONLY | O_TRUNC, 0644);
+    if (filefd == -1) {
+        send_message(connfd, 500, "Internal Server Error", 0);
+        return;
+    }
+    ssize_t out = 0, in = 0, to_go = size;
+    while (to_go > 0) {
+        if ((in = recv(connfd, request, 4096, 0)) < 0) {
+            send_message(connfd, 400, "Bad Request", 0);
+            close(filefd);
+            return;
+        }
+        out = write(filefd, request, in);
+        to_go -= out;
+    }
+    close(filefd);
+    if (result_message == 201) {
+        send_message(connfd, 201, "Created", 0);
+    } else {
+        send_message(connfd, 200, "OK", 0);
+    }
     return;
 }
 
