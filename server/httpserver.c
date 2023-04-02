@@ -105,8 +105,11 @@ void handle_request(int connfd) {
 
 	free(version);
 
-	while((size = reader(connfd, buffer, 1024)) > 0) {
-		printf("%s\n", buffer);
+	while (size = reader(connfd, buffer, 1024) > 0) {
+		x = 0;
+		while (x < size) {
+			x++;
+		}
 	}
 
 	if (strncmp(method, "HEAD", 4) == 0) {
