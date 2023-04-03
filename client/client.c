@@ -59,6 +59,11 @@ void get_client(int conn, char *file_name) {
 	return;
 }
 
+void delete_client(int conn, char *file_name) {
+	send_request(conn, "DELETE", file_name);
+	return;
+}
+
 int serve_requests(int conn) {
   struct dirent *d;
   DIR *directory;
@@ -93,7 +98,7 @@ int serve_requests(int conn) {
         break;
       }
       ssize_t method_iterator = 0, buffer_iterator = 0;
-      char *method = (char *)calloc(5, sizeof(char));
+      char *method = (char *)calloc(7, sizeof(char));
       while (buffer[buffer_iterator] != ',') {
         method[method_iterator] = buffer[buffer_iterator];
         method_iterator++;
@@ -105,6 +110,8 @@ int serve_requests(int conn) {
         n->command = 'H';
       } else if (strncmp(method, "GET", 3) == 0) {
 	n->command = 'G';
+      } else if (strncmp(method, "DELETE", 6) == 0) {
+	      n->command = 'D';
       } else {
         free(method);
         continue;
@@ -139,6 +146,8 @@ int serve_requests(int conn) {
       head_client(connection, file_iterator->file_name);
     } else if (file_iterator->command == 'G') {
 	    get_client(connection, file_iterator->file_name);
+	} else if (file_iterator->command == 'D') {
+		delete_client(connection, file_iterator->file_name);
     } else {
       file_iterator = file_iterator->next;
     }
