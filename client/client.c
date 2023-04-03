@@ -55,13 +55,13 @@ void head_client(int conn, char *file_name) {
 }
 
 void get_client(int conn, char *file_name) {
-	send_request(conn, "GET", file_name);
-	return;
+  send_request(conn, "GET", file_name);
+  return;
 }
 
 void delete_client(int conn, char *file_name) {
-	send_request(conn, "DELETE", file_name);
-	return;
+  send_request(conn, "DELETE", file_name);
+  return;
 }
 
 int serve_requests(int conn) {
@@ -109,9 +109,9 @@ int serve_requests(int conn) {
       if (strncmp(method, "HEAD", 4) == 0) {
         n->command = 'H';
       } else if (strncmp(method, "GET", 3) == 0) {
-	n->command = 'G';
+        n->command = 'G';
       } else if (strncmp(method, "DELETE", 6) == 0) {
-	      n->command = 'D';
+        n->command = 'D';
       } else {
         free(method);
         continue;
@@ -121,7 +121,9 @@ int serve_requests(int conn) {
       if (n->command != '0') {
         buffer_iterator++;
         ssize_t path_iterator = 0;
-        while (((buffer[buffer_iterator] != '\n') && (buffer[buffer_iterator] != '\0')) && (buffer_iterator < 255)) {
+        while (((buffer[buffer_iterator] != '\n') &&
+                (buffer[buffer_iterator] != '\0')) &&
+               (buffer_iterator < 255)) {
           path[path_iterator] = buffer[buffer_iterator];
           path_iterator++;
           buffer_iterator++;
@@ -141,13 +143,13 @@ int serve_requests(int conn) {
   char *response = (char *)calloc(1024, sizeof(char));
   ssize_t in = 0;
   while (file_iterator != NULL) {
-	int connection = create_client_socket(conn);
+    int connection = create_client_socket(conn);
     if (file_iterator->command == 'H') {
       head_client(connection, file_iterator->file_name);
     } else if (file_iterator->command == 'G') {
-	    get_client(connection, file_iterator->file_name);
-	} else if (file_iterator->command == 'D') {
-		delete_client(connection, file_iterator->file_name);
+      get_client(connection, file_iterator->file_name);
+    } else if (file_iterator->command == 'D') {
+      delete_client(connection, file_iterator->file_name);
     } else {
       file_iterator = file_iterator->next;
     }
