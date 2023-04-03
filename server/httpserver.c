@@ -52,6 +52,22 @@ static void sigterm_handler(int sig) {
     }
 }
 
+ssize_t grab_length(int connfd, char *buffer, ssize_t i) {
+    ssize_t l = 0;
+    for (;; i++) {
+        if (buffer[i] == ' ') {
+            return -1;
+        }
+        if (isdigit((unsigned char) buffer[i]) == 0) {
+            break;
+        } else {
+            l *= 10;
+            l += buffer[i] - '0';
+        }
+    }
+    return l;
+}
+
 void handle_request(int connfd) {
 	char *buffer = (char *)calloc(1024, sizeof(char));
 	char *method = (char *)calloc(8, sizeof(char));
@@ -105,10 +121,19 @@ void handle_request(int connfd) {
 
 	free(version);
 
+	int length = 0;
 	while (size = reader(connfd, buffer, 1024) > 0) {
 		x = 0;
-		while (x < size) {
-			x++;
+		if (size > 16) {
+			if (strncmp(buffer, "Content-Length: ", 16) == 0) {
+				length = grab_length(connfd, buffer, 16);
+				if (length < 0) {
+					free(buffer);
+                			free(method);
+                			free(path);
+                			return;
+				}
+        		}
 		}
 	}
 
