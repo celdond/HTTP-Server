@@ -159,6 +159,20 @@ void put_file(int connfd, char *file_name, ssize_t size) {
     return;
 }
 
+void delete_file(int connfd, char *file_name) {
+	if (file_check(file_name, connfd) < 0) {
+            return;
+    	}
+
+	int r = remove(file_name);
+	if (r == 0) {
+		send_message(connfd, 200, "OK", 0);
+	} else {
+		send_message(connfd, 500, "Internal Server Error", 0);
+	}
+	return;
+}
+
 void send_message(int connfd, int mess_num, char *message, ssize_t size) {
     char *pack = (char *) calloc(100, sizeof(char));
     if (!(pack)) {
