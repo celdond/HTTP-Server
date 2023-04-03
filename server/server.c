@@ -138,13 +138,15 @@ void put_file(int connfd, char *file_name, ssize_t size) {
         return;
     }
     ssize_t out = 0, in = 0, to_go = size;
+    char *buffer = (char *)calloc(4096, sizeof(char));
     while (to_go > 0) {
-        if ((in = recv(connfd, request, 4096, 0)) < 0) {
+        if ((in = recv(connfd, buffer, 4096, 0)) < 0) {
             send_message(connfd, 400, "Bad Request", 0);
             close(filefd);
+	    free(buffer);
             return;
         }
-        out = write(filefd, request, in);
+        out = write(filefd, buffer, in);
         to_go -= out;
     }
     close(filefd);
@@ -153,6 +155,7 @@ void put_file(int connfd, char *file_name, ssize_t size) {
     } else {
         send_message(connfd, 200, "OK", 0);
     }
+    free(buffer);
     return;
 }
 

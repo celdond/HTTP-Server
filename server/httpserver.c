@@ -52,7 +52,7 @@ static void sigterm_handler(int sig) {
     }
 }
 
-ssize_t grab_length(int connfd, char *buffer, ssize_t i) {
+ssize_t grab_length(char *buffer, ssize_t i) {
     ssize_t l = 0;
     for (;; i++) {
         if (buffer[i] == ' ') {
@@ -66,6 +66,29 @@ ssize_t grab_length(int connfd, char *buffer, ssize_t i) {
         }
     }
     return l;
+}
+
+int header_check(char *buffer, ssize_t size) {
+    ssize_t x = 0;
+    while (x < size) {
+        if (buffer[x] == ':') {
+            break;
+        }
+        if (buffer[x] == ' ') {
+            return -1;
+        }
+        x++;
+    }
+
+    char c = buffer[x];
+    while (c != '\r') {
+        if (c == ' ') {
+            return -1;
+        }
+        x++;
+        c = buffer[x];
+    }
+    return x;
 }
 
 void handle_request(int connfd) {
@@ -122,11 +145,10 @@ void handle_request(int connfd) {
 	free(version);
 
 	int length = 0;
-	while (size = reader(connfd, buffer, 1024) > 0) {
-		x = 0;
+	while ((size = reader(connfd, buffer, 1024)) > 0) {
 		if (size > 16) {
 			if (strncmp(buffer, "Content-Length: ", 16) == 0) {
-				length = grab_length(connfd, buffer, 16);
+				length = grab_length(buffer, 16);
 				if (length < 0) {
 					free(buffer);
                 			free(method);
@@ -134,8 +156,16 @@ void handle_request(int connfd) {
                 			return;
 				}
         		}
+		} else {
+			if (header_check(buffer, size) < 0) {
+				free(buffer);
+                                free(method);
+                                free(path);
+                                return;
+			}
 		}
 	}
+	printf("%d\n", length);
 
 	if (strncmp(method, "HEAD", 4) == 0) {
 		head(connfd, path);
