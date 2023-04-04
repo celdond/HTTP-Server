@@ -59,6 +59,10 @@ void get_client(int conn, char *file_name) {
   return;
 }
 
+void put_client(int conn, char *file_name) {
+	return;
+}
+
 void delete_client(int conn, char *file_name) {
   send_request(conn, "DELETE", file_name);
   return;
@@ -112,6 +116,8 @@ int serve_requests(int conn) {
         n->command = 'G';
       } else if (strncmp(method, "DELETE", 6) == 0) {
         n->command = 'D';
+      } else if (strncmp(method, "PUT", 3) == 0) {
+	n->command = 'P';
       } else {
         free(method);
         continue;
@@ -150,6 +156,8 @@ int serve_requests(int conn) {
       get_client(connection, file_iterator->file_name);
     } else if (file_iterator->command == 'D') {
       delete_client(connection, file_iterator->file_name);
+    } else if (file_iterator->command == 'P') {
+	    put_client(connection, file_iterator->file_name);
     } else {
       file_iterator = file_iterator->next;
     }

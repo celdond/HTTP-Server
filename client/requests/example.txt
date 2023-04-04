@@ -1,3 +1,4 @@
 GET,new.txt
 HEAD,new.txt
+DELETE,new.txt
 
