@@ -1,5 +1,0 @@
-This is a new file.
-
-Hello to the client.
-
-Hello, World!

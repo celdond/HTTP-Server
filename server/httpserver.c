@@ -174,7 +174,7 @@ void handle_request(int connfd) {
 	} else if (strncmp(method, "PUT", 3) == 0) {
 		put_file(connfd, path, length);
 	} else if (strncmp(method, "DELETE", 6) == 0) {
-		// DELETE FUNCTION
+		delete_file(connfd, path);
 	} else {
 		free(buffer);
 		free(method);
