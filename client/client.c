@@ -9,6 +9,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <ctype.h>
 
 #include "util.h"
 
@@ -60,6 +61,16 @@ void get_client(int conn, char *file_name) {
 }
 
 void put_client(int conn, char *file_name) {
+	char *path = (char *)calloc(1024, sizeof(char));
+	strncpy(path, "request_files/", 14);
+	int j = 14;
+	int i = 0;
+	while(!isspace((int)(file_name[i])) && ((j < 254))) {
+                path[j] = file_name[i];
+                i++;
+                j++;
+        }
+	free(path);
 	return;
 }
 
