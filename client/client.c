@@ -10,6 +10,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <ctype.h>
+#include <fcntl.h>
 
 #include "util.h"
 
@@ -34,15 +35,15 @@ ssize_t file_size(int filefd) {
     return size;
 }
 
-int file_check(char *file, int connfd) {
+int file_check(char *file) {
     if (access(file, F_OK) != 0) {
         if (errno == EACCES) {
-            send_message(connfd, 403, "Forbidden", 0);
+            perror("Forbidden\n");
         } else if (errno == ENOENT) {
-            send_message(connfd, 404, "File Not Found", 0);
-        } else {
-            send_message(connfd, 500, "Internal Server Error", 0);
-        }
+            perror("File Not Found\n");
+	} else {
+		perror("Failure\n");
+	}
         return -1;
     }
     return 1;
@@ -106,22 +107,31 @@ void put_client(int conn, char *file_name) {
                 j++;
         }
 
-	if (file_check(file_name, connfd) < 0) {
+	if (file_check(path) < 0) {
+		free(path);
             return;
-    }
+    	}
+	int filefd = open(path, O_RDONLY);
+    	if (filefd == -1) {
+    	    free(path);
+    	    return;
+    	}
+    	ssize_t size = file_size(filefd);
 
-	char *pack = (char *)calloc(100, sizeof(char));
+	char *pack = (char *)calloc(1024, sizeof(char));
   if (!(pack)) {
 	  free(path);
+	  close(filefd);
     return;
   }
 
-  snprintf(pack, 100, "%s /%s HTTP/1.0\r\nContent-Length: 15\r\n", method, file_name);
+  snprintf(pack, 1024, "PUT /%s HTTP/1.0\r\nContent-Length: %zu\r\n", file_name, size);
 
-  if (send(conn, pack, 100, 0) == -1) {
+  if (send(conn, pack, 1024, 0) == -1) {
     perror("Send Error\n");
   }
   free(pack);
+  close(filefd);
 	return;
 }
 
