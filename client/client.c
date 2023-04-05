@@ -62,6 +62,9 @@ void get_client(int conn, char *file_name) {
 
 void put_client(int conn, char *file_name) {
 	char *path = (char *)calloc(1024, sizeof(char));
+	if (!(path)) {
+		return;
+	}
 	strncpy(path, "request_files/", 14);
 	int j = 14;
 	int i = 0;
@@ -70,7 +73,23 @@ void put_client(int conn, char *file_name) {
                 i++;
                 j++;
         }
-	free(path);
+
+	if (file_check(file_name, connfd) < 0) {
+            return;
+    }
+
+	char *pack = (char *)calloc(100, sizeof(char));
+  if (!(pack)) {
+	  free(path);
+    return;
+  }
+
+  snprintf(pack, 100, "%s /%s HTTP/1.0\r\nContent-Length: 15\r\n", method, file_name);
+
+  if (send(conn, pack, 100, 0) == -1) {
+    perror("Send Error\n");
+  }
+  free(pack);
 	return;
 }
 
