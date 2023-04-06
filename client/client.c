@@ -1,7 +1,9 @@
 #include <arpa/inet.h>
+#include <ctype.h>
 #include <dirent.h>
 #include <err.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,8 +11,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <ctype.h>
-#include <fcntl.h>
 
 #include "util.h"
 
@@ -18,35 +18,35 @@
 #define FILES "./request_files"
 
 ssize_t file_size(int filefd) {
-    struct stat *stat_log = (struct stat *) calloc(1, sizeof(struct stat));
-    if (!(stat_log)) {
-        return -1;
-    }
-    if (fstat(filefd, stat_log) != 0) {
-        free(stat_log);
-        return -1;
-    }
-    if (!(S_ISREG(stat_log->st_mode))) {
-        free(stat_log);
-        return -2;
-    }
-    ssize_t size = stat_log->st_size;
+  struct stat *stat_log = (struct stat *)calloc(1, sizeof(struct stat));
+  if (!(stat_log)) {
+    return -1;
+  }
+  if (fstat(filefd, stat_log) != 0) {
     free(stat_log);
-    return size;
+    return -1;
+  }
+  if (!(S_ISREG(stat_log->st_mode))) {
+    free(stat_log);
+    return -2;
+  }
+  ssize_t size = stat_log->st_size;
+  free(stat_log);
+  return size;
 }
 
 int file_check(char *file) {
-    if (access(file, F_OK) != 0) {
-        if (errno == EACCES) {
-            perror("Forbidden\n");
-        } else if (errno == ENOENT) {
-            perror("File Not Found\n");
-	} else {
-		perror("Failure\n");
-	}
-        return -1;
+  if (access(file, F_OK) != 0) {
+    if (errno == EACCES) {
+      perror("Forbidden\n");
+    } else if (errno == ENOENT) {
+      perror("File Not Found\n");
+    } else {
+      perror("Failure\n");
     }
-    return 1;
+    return -1;
+  }
+  return 1;
 }
 
 static int create_client_socket(int connection_port) {
@@ -94,45 +94,46 @@ void get_client(int conn, char *file_name) {
 }
 
 void put_client(int conn, char *file_name) {
-	char *path = (char *)calloc(1024, sizeof(char));
-	if (!(path)) {
-		return;
-	}
-	strncpy(path, "request_files/", 14);
-	int j = 14;
-	int i = 0;
-	while(!isspace((int)(file_name[i])) && ((j < 254))) {
-                path[j] = file_name[i];
-                i++;
-                j++;
-        }
+  char *path = (char *)calloc(1024, sizeof(char));
+  if (!(path)) {
+    return;
+  }
+  strncpy(path, "request_files/", 14);
+  int j = 14;
+  int i = 0;
+  while (!isspace((int)(file_name[i])) && ((j < 254))) {
+    path[j] = file_name[i];
+    i++;
+    j++;
+  }
 
-	if (file_check(path) < 0) {
-		free(path);
-            return;
-    	}
-	int filefd = open(path, O_RDONLY);
-    	if (filefd == -1) {
-    	    free(path);
-    	    return;
-    	}
-    	ssize_t size = file_size(filefd);
+  if (file_check(path) < 0) {
+    free(path);
+    return;
+  }
+  int filefd = open(path, O_RDONLY);
+  if (filefd == -1) {
+    free(path);
+    return;
+  }
+  ssize_t size = file_size(filefd);
 
-	char *pack = (char *)calloc(1024, sizeof(char));
+  char *pack = (char *)calloc(1024, sizeof(char));
   if (!(pack)) {
-	  free(path);
-	  close(filefd);
+    free(path);
+    close(filefd);
     return;
   }
 
-  snprintf(pack, 1024, "PUT /%s HTTP/1.0\r\nContent-Length: %zu\r\n", file_name, size);
+  snprintf(pack, 1024, "PUT /%s HTTP/1.0\r\nContent-Length: %zu\r\n", file_name,
+           size);
 
   if (send(conn, pack, 1024, 0) == -1) {
     perror("Send Error\n");
   }
   free(pack);
   close(filefd);
-	return;
+  return;
 }
 
 void delete_client(int conn, char *file_name) {
@@ -189,7 +190,7 @@ int serve_requests(int conn) {
       } else if (strncmp(method, "DELETE", 6) == 0) {
         n->command = 'D';
       } else if (strncmp(method, "PUT", 3) == 0) {
-	n->command = 'P';
+        n->command = 'P';
       } else {
         free(method);
         continue;
@@ -229,7 +230,7 @@ int serve_requests(int conn) {
     } else if (file_iterator->command == 'D') {
       delete_client(connection, file_iterator->file_name);
     } else if (file_iterator->command == 'P') {
-	    put_client(connection, file_iterator->file_name);
+      put_client(connection, file_iterator->file_name);
     } else {
       file_iterator = file_iterator->next;
     }
