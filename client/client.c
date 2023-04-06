@@ -113,10 +113,20 @@ void put_client(int conn, char *file_name) {
   }
   int filefd = open(path, O_RDONLY);
   if (filefd == -1) {
+    perror("File cannot be opened\n");
     free(path);
     return;
   }
   ssize_t size = file_size(filefd);
+  if (size == -1) {
+    perror("Error opening file\n");
+    close(filefd);
+    return;
+  } else if (size < -1) {
+    perror("Forbidden\n");
+    close(filefd);
+    return;
+  }
 
   char *pack = (char *)calloc(1024, sizeof(char));
   if (!(pack)) {
@@ -130,20 +140,23 @@ void put_client(int conn, char *file_name) {
 
   if (send(conn, pack, 1024, 0) == -1) {
     perror("Send Error\n");
+    close(filefd);
+    free(pack);
+    return;
   }
   free(pack);
 
-  ssize_t out = 0, in = 0, to_go = size;
   char *buffer = (char *)calloc(4096, sizeof(char));
-  while (to_go > 0) {
-    if ((in = recv(conn, buffer, 4096, 0)) < 0) {
-      perror("Bad Request\n");
+  ssize_t read_bytes;
+  while (size > 0) {
+    read_bytes = read(filefd, buffer, 4096);
+    size -= read_bytes;
+    if (send(conn, buffer, read_bytes, 0) < 0) {
+      perror("Send Error\n");
       close(filefd);
       free(buffer);
       return;
     }
-    out = write(filefd, buffer, in);
-    to_go -= out;
   }
 
   free(buffer);
