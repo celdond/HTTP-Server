@@ -132,6 +132,21 @@ void put_client(int conn, char *file_name) {
     perror("Send Error\n");
   }
   free(pack);
+
+  ssize_t out = 0, in = 0, to_go = size;
+  char *buffer = (char *)calloc(4096, sizeof(char));
+  while (to_go > 0) {
+    if ((in = recv(conn, buffer, 4096, 0)) < 0) {
+      perror("Bad Request\n");
+      close(filefd);
+      free(buffer);
+      return;
+    }
+    out = write(filefd, buffer, in);
+    to_go -= out;
+  }
+
+  free(buffer);
   close(filefd);
   return;
 }
