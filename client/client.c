@@ -68,35 +68,37 @@ static int create_client_socket(int connection_port) {
   return sock;
 }
 
-void send_request(int conn, char *method, char *file_name) {
+int send_request(int conn, char *method, char *file_name) {
   char *pack = (char *)calloc(100, sizeof(char));
   if (!(pack)) {
-    return;
+    return -1;
   }
 
   snprintf(pack, 100, "%s /%s HTTP/1.0\r\n\r\n", method, file_name);
 
   if (send(conn, pack, 100, 0) == -1) {
     perror("Send Error\n");
+    free(pack);
+    return -1;
   }
   free(pack);
-  return;
+  return 1;
 }
 
-void head_client(int conn, char *file_name) {
-  send_request(conn, "HEAD", file_name);
-  return;
+int head_client(int conn, char *file_name) {
+  int r = send_request(conn, "HEAD", file_name);
+  return r;
 }
 
-void get_client(int conn, char *file_name) {
-  send_request(conn, "GET", file_name);
-  return;
+int get_client(int conn, char *file_name) {
+  int r = send_request(conn, "GET", file_name);
+  return r;
 }
 
-void put_client(int conn, char *file_name) {
+int put_client(int conn, char *file_name) {
   char *path = (char *)calloc(1024, sizeof(char));
   if (!(path)) {
-    return;
+    return -1;
   }
   strncpy(path, "request_files/", 14);
   int j = 14;
@@ -109,30 +111,30 @@ void put_client(int conn, char *file_name) {
 
   if (file_check(path) < 0) {
     free(path);
-    return;
+    return -1;
   }
   int filefd = open(path, O_RDONLY);
   if (filefd == -1) {
     perror("File cannot be opened\n");
     free(path);
-    return;
+    return -1;
   }
   ssize_t size = file_size(filefd);
   if (size == -1) {
     perror("Error opening file\n");
     close(filefd);
-    return;
+    return -1;
   } else if (size < -1) {
     perror("Forbidden\n");
     close(filefd);
-    return;
+    return -1;
   }
 
   char *pack = (char *)calloc(1024, sizeof(char));
   if (!(pack)) {
     free(path);
     close(filefd);
-    return;
+    return -1;
   }
 
   snprintf(pack, 1024, "PUT /%s HTTP/1.0\r\nContent-Length: %zu\r\n", file_name,
@@ -142,7 +144,7 @@ void put_client(int conn, char *file_name) {
     perror("Send Error\n");
     close(filefd);
     free(pack);
-    return;
+    return -1;
   }
   free(pack);
 
@@ -155,18 +157,18 @@ void put_client(int conn, char *file_name) {
       perror("Send Error\n");
       close(filefd);
       free(buffer);
-      return;
+      return -1;
     }
   }
 
   free(buffer);
   close(filefd);
-  return;
+  return 1;
 }
 
-void delete_client(int conn, char *file_name) {
-  send_request(conn, "DELETE", file_name);
-  return;
+int delete_client(int conn, char *file_name) {
+  int r = send_request(conn, "DELETE", file_name);
+  return r;
 }
 
 int serve_requests(int conn) {
@@ -249,21 +251,24 @@ int serve_requests(int conn) {
   struct node *file_iterator = l->head;
   char *response = (char *)calloc(1024, sizeof(char));
   ssize_t in = 0;
+  int r = -1;
   while (file_iterator != NULL) {
     int connection = create_client_socket(conn);
     if (file_iterator->command == 'H') {
-      head_client(connection, file_iterator->file_name);
+      r = head_client(connection, file_iterator->file_name);
     } else if (file_iterator->command == 'G') {
-      get_client(connection, file_iterator->file_name);
+      r = get_client(connection, file_iterator->file_name);
     } else if (file_iterator->command == 'D') {
-      delete_client(connection, file_iterator->file_name);
+      r = delete_client(connection, file_iterator->file_name);
     } else if (file_iterator->command == 'P') {
-      put_client(connection, file_iterator->file_name);
+      r = put_client(connection, file_iterator->file_name);
     } else {
       file_iterator = file_iterator->next;
     }
-    while ((in = recv(connection, response, 1024, 0)) > 0) {
-      printf("%s", response);
+    if (r > 0) {
+    	while ((in = recv(connection, response, 1024, 0)) > 0) {
+      		printf("%s", response);
+    	}
     }
     close(connection);
     file_iterator = file_iterator->next;
