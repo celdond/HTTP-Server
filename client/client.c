@@ -137,10 +137,10 @@ int put_client(int conn, char *file_name) {
     return -1;
   }
 
-  snprintf(pack, 1024, "PUT /%s HTTP/1.0\r\nContent-Length: %zu\r\n\r\n", file_name,
+  int s = snprintf(pack, 1024, "PUT /%s HTTP/1.0\r\nContent-Length: %zu\r\n\r\n", file_name,
            size);
 
-  if (send(conn, pack, 1024, 0) == -1) {
+  if (send(conn, pack, s, 0) == -1) {
     perror("Send Error\n");
     close(filefd);
     free(pack);
