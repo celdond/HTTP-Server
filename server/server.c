@@ -1,5 +1,48 @@
 #include "server.h"
 
+void acquire_file(struct threa *t) {
+    int index = -1;
+    int type = 0;
+    pthread_mutex_lock(&(t->file_lock));
+    for (int i = 0; i < t->thread_count; i++) {
+        if (!(t->files[i][0]) && index == -1) {
+            index = i;
+        }
+        if (t->files[i][0] == r->file_name[0]) {
+            if (strncmp(t->files[i], r->file_name, 20) == 0) {
+                type = 1;
+                index = i;
+                break;
+            }
+        }
+    }
+    if (type != 1) {
+        strncpy(t->files[index], r->file_name, 19);
+    }
+    t->wanters[index] += 1;
+    pthread_mutex_unlock(&(t->file_lock));
+    r->iter = index;
+    if (r->verb[0] == 'G') {
+        pthread_rwlock_rdlock(&t->l[index]);
+    } else {
+        pthread_rwlock_wrlock(&t->l[index]);
+    }
+    return;
+}
+
+void drop_file(struct threa *t) {
+    pthread_mutex_lock(&(t->file_lock));
+    t->wanters[r->iter] -= 1;
+    if (t->wanters[r->iter] == 0) {
+        for (int i = 0; i < 20; i++) {
+            t->files[r->iter][i] = '\0';
+        }
+    }
+    pthread_mutex_unlock(&(t->file_lock));
+    pthread_rwlock_unlock(&t->l[r->iter]);
+    return;
+}
+
 ssize_t file_size(int filefd) {
     struct stat *stat_log = (struct stat *) calloc(1, sizeof(struct stat));
     if (!(stat_log)) {
