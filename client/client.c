@@ -18,6 +18,38 @@
 #define FILES "./request_files"
 #define DEFAULT 1
 
+static void sigterm_handler(int sig) {
+        if (sig == SIGTERM || sig == SIGINT) {
+
+                for (int i = 0; i < thread_op->thread_count; i++) {
+                        if (pthread_mutex_lock(&pc_lock) != 0) {
+                                perror("Mutex Error");
+                                continue;
+                        }
+                        while (thread_op->count == thread_op->max_count) {
+                                pthread_cond_wait(&full_sig, &pc_lock);
+                        }
+                        thread_op->work_buffer[thread_op->in] = -1;
+                        thread_op->in = (thread_op->in + 1) % thread_op->max_count;
+                        thread_op->count += 1;
+                        pthread_cond_signal(&empty_sig);
+
+                        pthread_mutex_unlock(&pc_lock);
+                }
+
+                void *data;
+                for (int i = 0; i < thread_op->thread_count; i++) {
+                        pthread_join(thread_list[i], &data);
+                        if (data != NULL) {
+                                free(data);
+                        }
+                }
+
+        free_threa(thread_op);
+        exit(EXIT_SUCCESS);
+    }
+}
+
 ssize_t file_size(int filefd) {
   struct stat *stat_log = (struct stat *)calloc(1, sizeof(struct stat));
   if (!(stat_log)) {
