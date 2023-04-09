@@ -11,6 +11,10 @@ pthread_t *thread_list;
 
 struct threa {
 	int *work_buffer;
+	char **files;
+	int *wanters;
+	pthread_rwlock_t *l;
+	pthread_mutex_t file_lock;
 	int in;
 	int out;
 	int count;
