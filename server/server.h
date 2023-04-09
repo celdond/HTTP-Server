@@ -10,6 +10,9 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <pthread.h>
+
+#include "drone.h"
 
 ssize_t reader(int connection_port, char *buffer, ssize_t size);
 

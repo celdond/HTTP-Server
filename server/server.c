@@ -1,6 +1,6 @@
 #include "server.h"
 
-void acquire_file(struct threa *t) {
+int acquire_file(struct threa *t, char *file_name, char verb) {
     int index = -1;
     int type = 0;
     pthread_mutex_lock(&(t->file_lock));
@@ -8,8 +8,8 @@ void acquire_file(struct threa *t) {
         if (!(t->files[i][0]) && index == -1) {
             index = i;
         }
-        if (t->files[i][0] == r->file_name[0]) {
-            if (strncmp(t->files[i], r->file_name, 20) == 0) {
+        if (t->files[i][0] == file_name[0]) {
+            if (strncmp(t->files[i], file_name, 254) == 0) {
                 type = 1;
                 index = i;
                 break;
@@ -17,29 +17,29 @@ void acquire_file(struct threa *t) {
         }
     }
     if (type != 1) {
-        strncpy(t->files[index], r->file_name, 19);
+        strncpy(t->files[index], file_name, 255);
     }
     t->wanters[index] += 1;
     pthread_mutex_unlock(&(t->file_lock));
-    r->iter = index;
-    if (r->verb[0] == 'G') {
+    int iter = index;
+    if (verb == 'P') {
         pthread_rwlock_rdlock(&t->l[index]);
     } else {
         pthread_rwlock_wrlock(&t->l[index]);
     }
-    return;
+    return iter;
 }
 
-void drop_file(struct threa *t) {
+void drop_file(struct threa *t, int iter) {
     pthread_mutex_lock(&(t->file_lock));
-    t->wanters[r->iter] -= 1;
-    if (t->wanters[r->iter] == 0) {
+    t->wanters[iter] -= 1;
+    if (t->wanters[iter] == 0) {
         for (int i = 0; i < 20; i++) {
-            t->files[r->iter][i] = '\0';
+            t->files[iter][i] = '\0';
         }
     }
     pthread_mutex_unlock(&(t->file_lock));
-    pthread_rwlock_unlock(&t->l[r->iter]);
+    pthread_rwlock_unlock(&t->l[iter]);
     return;
 }
 
