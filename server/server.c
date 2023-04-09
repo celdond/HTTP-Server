@@ -97,50 +97,60 @@ ssize_t reader(int connection_port, char *buffer, ssize_t size) {
 }
 
 void head(int connfd, char *file_name, struct threa *t) {
+	int lock_index = acquire_file(t, file_name, 'G');
 	if (file_check(file_name, connfd) < 0) {
+		drop_file(t, lock_index);
     	    return;
     	}
     	int filefd = open(file_name, O_RDONLY);
     	if (filefd == -1) {
+		drop_file(t, lock_index);
     	    send_message(connfd, 403, "Forbidden", 0);
     	    return;
     	}
     	ssize_t size = file_size(filefd);
     	if (size == -1) {
+		close(filefd);
+		drop_file(t, lock_index);
         	send_message(connfd, 500, "Internal Server Error", 0);
-        	close(filefd);
         	return;
     	} else if (size < -1) {
+		close(filefd);
+		drop_file(t, lock_index);
         	send_message(connfd, 403, "Forbidden", 0);
-        	close(filefd);
         	return;
     	}
 
-	send_message(connfd, 200, "OK", size);
 	close(filefd);
+	drop_file(t, lock_index);
+	send_message(connfd, 200, "OK", size);
 	return;
 }
 
 void get_file(int connfd, char *file_name, struct threa *t) {
+	int lock_index = acquire_file(t, file_name, 'G');
     if (file_check(file_name, connfd) < 0) {
             return;
     }
     char *buffer = (char *)calloc(4096, sizeof(char));
     int filefd = open(file_name, O_RDONLY);
     if (filefd == -1) {
+	    drop_file(t, lock_index);
         send_message(connfd, 403, "Forbidden", 0);
 	free(buffer);
         return;
     }
     ssize_t size = file_size(filefd);
     if (size == -1) {
+	    close(filefd);
+	    drop_file(t, lock_index);
         send_message(connfd, 500, "Internal Server Error", 0);
-        close(filefd);
 	free(buffer);
         return;
     } else if (size < -1) {
+	    close(filefd);
+	    drop_file(t, lock_index);
         send_message(connfd, 403, "Forbidden", 0);
-        close(filefd);
 	free(buffer);
         return;
     }
@@ -154,29 +164,35 @@ void get_file(int connfd, char *file_name, struct threa *t) {
         i -= read_b;
         if (send(connfd, buffer, read_b, 0) < 0) {
             close(filefd);
+	    drop_file(t, lock_index);
 	    free(buffer);
             return;
         }
     }
 
     close(filefd);
+    drop_file(t, lock_index);
     free(buffer);
     return;
 }
 
 void put_file(int connfd, char *file_name, ssize_t size, struct threa *t) {
     int result_message = 200;
+    int lock_index = acquire_file(t, file_name, 'G');
     if (access(file_name, F_OK) != 0) {
         if (errno == EACCES) {
+		drop_file(t, lock_index);
             send_message(connfd, 403, "Forbidden", 0);
             return;
         } else if (errno == ENOENT) {
+		drop_file(t, lock_index);
             result_message = 201;
         }
     }
 
     int filefd = open(file_name, O_CREAT | O_WRONLY | O_TRUNC, 0644);
     if (filefd == -1) {
+	    drop_file(t, lock_index);
         send_message(connfd, 500, "Internal Server Error", 0);
         return;
     }
@@ -184,8 +200,9 @@ void put_file(int connfd, char *file_name, ssize_t size, struct threa *t) {
     char *buffer = (char *)calloc(4096, sizeof(char));
     while (to_go > 0) {
         if ((in = recv(connfd, buffer, 4096, 0)) < 0) {
+		close(filefd);
+		drop_file(t, lock_index);
             send_message(connfd, 400, "Bad Request", 0);
-            close(filefd);
 	    free(buffer);
             return;
         }
@@ -193,6 +210,7 @@ void put_file(int connfd, char *file_name, ssize_t size, struct threa *t) {
         to_go -= out;
     }
     close(filefd);
+    drop_file(t, lock_index);
     if (result_message == 201) {
         send_message(connfd, 201, "Created", 0);
     } else {
@@ -203,11 +221,14 @@ void put_file(int connfd, char *file_name, ssize_t size, struct threa *t) {
 }
 
 void delete_file(int connfd, char *file_name, struct threa *t) {
+	int lock_index = acquire_file(t, file_name, 'G');
 	if (file_check(file_name, connfd) < 0) {
+		drop_file(t, lock_index);
             return;
     	}
 
 	int r = remove(file_name);
+	drop_file(t, lock_index);
 	if (r == 0) {
 		send_message(connfd, 200, "OK", 0);
 	} else {
