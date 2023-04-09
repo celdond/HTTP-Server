@@ -16,6 +16,7 @@
 
 #define REQUESTS "./requests"
 #define FILES "./request_files"
+#define DEFAULT 1
 
 ssize_t file_size(int filefd) {
   struct stat *stat_log = (struct stat *)calloc(1, sizeof(struct stat));
@@ -137,8 +138,9 @@ int put_client(int conn, char *file_name) {
     return -1;
   }
 
-  int s = snprintf(pack, 1024, "PUT /%s HTTP/1.0\r\nContent-Length: %zu\r\n\r\n", file_name,
-           size);
+  int s =
+      snprintf(pack, 1024, "PUT /%s HTTP/1.0\r\nContent-Length: %zu\r\n\r\n",
+               file_name, size);
 
   if (send(conn, pack, s, 0) == -1) {
     perror("Send Error\n");
@@ -266,9 +268,9 @@ int serve_requests(int conn) {
       file_iterator = file_iterator->next;
     }
     if (r > 0) {
-    	while ((in = recv(connection, response, 1024, 0)) > 0) {
-      		printf("%s", response);
-    	}
+      while ((in = recv(connection, response, 1024, 0)) > 0) {
+        printf("%s", response);
+      }
     }
     close(connection);
     file_iterator = file_iterator->next;
@@ -280,13 +282,50 @@ int serve_requests(int conn) {
 }
 
 int main(int argc, char *argv[]) {
-  if (argc != 2) {
-    err(EXIT_FAILURE, "Too many input parameters.");
+  int op = 0;
+  int threads = DEFAULT;
+  while ((op = getopt(argc, argv, OPTIONS)) != -1) {
+    switch (op) {
+    case 't':
+      threads = strtol(optarg, NULL, 10);
+      if (threads <= 0) {
+        errx(EXIT_FAILURE, "bad number of threads");
+      }
+      break;
+    default:
+      errx(EXIT_FAILURE, "Invalid parameter");
+    }
   }
+
+  if (optind >= argc) {
+    errx(EXIT_FAILURE, "Wrong number of parameters");
+  }
+  int connection_port;
   char *s;
-  int port = strtol(argv[1], &s, 10);
-  if (port <= 0 || *s != '\0') {
+  connection_port = strtol(argv[optind], &s, 10);
+  if (connection_port <= 0 || *s != '\0') {
     err(EXIT_FAILURE, "Invalid Port");
+  }
+
+  struct threa *thread_storage = create_thread_sheet(threads, 1024);
+  if (thread_storage == NULL) {
+    return EXIT_FAILURE;
+  }
+  thread_op = thread_storage;
+
+  signal(SIGPIPE, SIG_IGN);
+  signal(SIGTERM, sigterm_handler);
+  signal(SIGINT, sigterm_handler);
+
+  pthread_t thread_temp[threads];
+  thread_list = thread_temp;
+  int rc = 0;
+  for (int iter = 0; iter < threads; iter++) {
+    rc = pthread_create(&(thread_temp[iter]), NULL, consumers,
+                        thread_storage) != 0;
+    if (rc != 0) {
+      return EXIT_FAILURE;
+    }
   }
   serve_requests(port);
   return 0;
