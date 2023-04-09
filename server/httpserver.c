@@ -91,7 +91,7 @@ int header_check(char *buffer, ssize_t size) {
     return x;
 }
 
-void handle_request(int connfd) {
+void handle_request(int connfd, struct threa *t) {
 	char *buffer = (char *)calloc(1024, sizeof(char));
 	char *method = (char *)calloc(8, sizeof(char));
 	char *path = (char *)calloc(255, sizeof(char));
@@ -168,13 +168,13 @@ void handle_request(int connfd) {
 	printf("%d\n", length);
 
 	if (strncmp(method, "HEAD", 4) == 0) {
-		head(connfd, path);
+		head(connfd, path, t);
 	} else if (strncmp(method, "GET", 3) == 0) {
-		get_file(connfd, path);
+		get_file(connfd, path, t);
 	} else if (strncmp(method, "PUT", 3) == 0) {
-		put_file(connfd, path, length);
+		put_file(connfd, path, length, t);
 	} else if (strncmp(method, "DELETE", 6) == 0) {
-		delete_file(connfd, path);
+		delete_file(connfd, path, t);
 	} else {
 		free(buffer);
 		free(method);
@@ -259,7 +259,7 @@ void *consumers(void *thread_storage) {
             return NULL;
         }
 
-        handle_request(connfd);
+        handle_request(connfd, t);
         close(connfd);
     }
 }

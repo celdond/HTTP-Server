@@ -16,13 +16,13 @@
 
 ssize_t reader(int connection_port, char *buffer, ssize_t size);
 
-void head(int connfd, char *file_name);
+void head(int connfd, char *file_name, struct threa *t);
 
-void get_file(int connfd, char *file_name);
+void get_file(int connfd, char *file_name, struct threa *t);
 
-void put_file(int connfd, char *file_name, ssize_t size);
+void put_file(int connfd, char *file_name, ssize_t size, struct threa *t);
 
-void delete_file(int connfd, char *file_name);
+void delete_file(int connfd, char *file_name, struct threa *t);
 
 void send_message(int connfd, int mess_num, char *message, ssize_t size);
 

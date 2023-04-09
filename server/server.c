@@ -96,7 +96,7 @@ ssize_t reader(int connection_port, char *buffer, ssize_t size) {
 	return i;
 }
 
-void head(int connfd, char *file_name) {
+void head(int connfd, char *file_name, struct threa *t) {
 	if (file_check(file_name, connfd) < 0) {
     	    return;
     	}
@@ -121,7 +121,7 @@ void head(int connfd, char *file_name) {
 	return;
 }
 
-void get_file(int connfd, char *file_name) {
+void get_file(int connfd, char *file_name, struct threa *t) {
     if (file_check(file_name, connfd) < 0) {
             return;
     }
@@ -164,7 +164,7 @@ void get_file(int connfd, char *file_name) {
     return;
 }
 
-void put_file(int connfd, char *file_name, ssize_t size) {
+void put_file(int connfd, char *file_name, ssize_t size, struct threa *t) {
     int result_message = 200;
     if (access(file_name, F_OK) != 0) {
         if (errno == EACCES) {
@@ -202,7 +202,7 @@ void put_file(int connfd, char *file_name, ssize_t size) {
     return;
 }
 
-void delete_file(int connfd, char *file_name) {
+void delete_file(int connfd, char *file_name, struct threa *t) {
 	if (file_check(file_name, connfd) < 0) {
             return;
     	}
