@@ -233,12 +233,18 @@ void *consumers(void *thread_storage) {
 
         pthread_mutex_unlock(&pc_lock);
 
-        if (method == 'R') {
-            return NULL;
-        }
-
 	connection = create_client_socket(connfd);
-        // Handle request
+        if (method == 'H') {
+                head_client(connfd, file_name);
+        } else if (method == 'G') {
+                get_client(connfd, file_name);
+        } else if (method == 'D') {
+                delete_client(connfd, file_name);
+        } else if (method == 'P') {
+                put_client(connfd, file_name);
+        } else {
+                return NULL;
+        }
 	close(connection);
     }
 }
