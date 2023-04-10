@@ -4,6 +4,7 @@
 #include <err.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,7 +12,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <pthread.h>
 
 #include "util.h"
 
@@ -24,35 +24,35 @@ pthread_cond_t empty_sig = PTHREAD_COND_INITIALIZER;
 pthread_cond_t full_sig = PTHREAD_COND_INITIALIZER;
 
 static void sigterm_handler(int sig) {
-        if (sig == SIGTERM || sig == SIGINT) {
+  if (sig == SIGTERM || sig == SIGINT) {
 
-                for (int i = 0; i < thread_op->thread_count; i++) {
-                        if (pthread_mutex_lock(&pc_lock) != 0) {
-                                perror("Mutex Error");
-                                continue;
-                        }
-                        while (thread_op->count == thread_op->max_count) {
-                                pthread_cond_wait(&full_sig, &pc_lock);
-                        }
-                        thread_op->work_buffer[thread_op->in]->method = 'R';
-                        thread_op->in = (thread_op->in + 1) % thread_op->max_count;
-                        thread_op->count += 1;
-                        pthread_cond_signal(&empty_sig);
+    for (int i = 0; i < thread_op->thread_count; i++) {
+      if (pthread_mutex_lock(&pc_lock) != 0) {
+        perror("Mutex Error");
+        continue;
+      }
+      while (thread_op->count == thread_op->max_count) {
+        pthread_cond_wait(&full_sig, &pc_lock);
+      }
+      thread_op->work_buffer[thread_op->in]->method = 'R';
+      thread_op->in = (thread_op->in + 1) % thread_op->max_count;
+      thread_op->count += 1;
+      pthread_cond_signal(&empty_sig);
 
-                        pthread_mutex_unlock(&pc_lock);
-                }
-
-                void *data;
-                for (int i = 0; i < thread_op->thread_count; i++) {
-                        pthread_join(thread_list[i], &data);
-                        if (data != NULL) {
-                                free(data);
-                        }
-                }
-
-        free_threa(thread_op);
-        exit(EXIT_SUCCESS);
+      pthread_mutex_unlock(&pc_lock);
     }
+
+    void *data;
+    for (int i = 0; i < thread_op->thread_count; i++) {
+      pthread_join(thread_list[i], &data);
+      if (data != NULL) {
+        free(data);
+      }
+    }
+
+    free_threa(thread_op);
+    exit(EXIT_SUCCESS);
+  }
 }
 
 ssize_t file_size(int filefd) {
@@ -211,42 +211,42 @@ int delete_client(int conn, char *file_name) {
 }
 
 void *consumers(void *thread_storage) {
-    struct threa *t = thread_storage;
-    int connfd = t->connfd;
-    int connection;
-    char method;
-    char *file_name;
-    while (1) {
-        if (pthread_mutex_lock(&pc_lock) != 0) {
-            perror("Mutex Error");
-            continue;
-        }
-
-        while (t->count == 0) {
-            pthread_cond_wait(&empty_sig, &pc_lock);
-        }
-        method = t->work_buffer[t->out]->method;
-	file_name = t->work_buffer[t->out]->file;
-        t->out = (t->out + 1) % t->max_count;
-        t->count -= 1;
-        pthread_cond_signal(&full_sig);
-
-        pthread_mutex_unlock(&pc_lock);
-
-	connection = create_client_socket(connfd);
-        if (method == 'H') {
-                head_client(connfd, file_name);
-        } else if (method == 'G') {
-                get_client(connfd, file_name);
-        } else if (method == 'D') {
-                delete_client(connfd, file_name);
-        } else if (method == 'P') {
-                put_client(connfd, file_name);
-        } else {
-                return NULL;
-        }
-	close(connection);
+  struct threa *t = thread_storage;
+  int connfd = t->connfd;
+  int connection;
+  char method;
+  char *file_name;
+  while (1) {
+    if (pthread_mutex_lock(&pc_lock) != 0) {
+      perror("Mutex Error");
+      continue;
     }
+
+    while (t->count == 0) {
+      pthread_cond_wait(&empty_sig, &pc_lock);
+    }
+    method = t->work_buffer[t->out]->method;
+    file_name = t->work_buffer[t->out]->file;
+    t->out = (t->out + 1) % t->max_count;
+    t->count -= 1;
+    pthread_cond_signal(&full_sig);
+
+    pthread_mutex_unlock(&pc_lock);
+
+    connection = create_client_socket(connfd);
+    if (method == 'H') {
+      head_client(connfd, file_name);
+    } else if (method == 'G') {
+      get_client(connfd, file_name);
+    } else if (method == 'D') {
+      delete_client(connfd, file_name);
+    } else if (method == 'P') {
+      put_client(connfd, file_name);
+    } else {
+      return NULL;
+    }
+    close(connection);
+  }
 }
 
 int serve_requests(struct threa *t) {
@@ -329,17 +329,20 @@ int serve_requests(struct threa *t) {
 
   struct node *file_iterator = l->head;
   while (file_iterator != NULL) {
-    if (file_iterator->command == 'H') {
-      r = head_client(connection, file_iterator->file_name);
-    } else if (file_iterator->command == 'G') {
-      r = get_client(connection, file_iterator->file_name);
-    } else if (file_iterator->command == 'D') {
-      r = delete_client(connection, file_iterator->file_name);
-    } else if (file_iterator->command == 'P') {
-      r = put_client(connection, file_iterator->file_name);
-    } else {
-      file_iterator = file_iterator->next;
+    if (pthread_mutex_lock(&pc_lock) != 0) {
+      perror("Mutex Error");
+      continue;
     }
+    while (t->count == t->max_count) {
+      pthread_cond_wait(&full_sig, &pc_lock);
+    }
+    t->work_buffer[t->in]->method = file_iterator->command;
+    t->work_buffer[t->in]->file_name = file_iterator->file_name;
+    t->in = (t->in + 1) % t->max_count;
+    t->count += 1;
+    pthread_cond_signal(&empty_sig);
+
+    pthread_mutex_unlock(&pc_lock);
     file_iterator = file_iterator->next;
   }
 
@@ -388,11 +391,11 @@ int main(int argc, char *argv[]) {
   thread_list = thread_temp;
   int rc = 0;
   for (int iter = 0; iter < threads; iter++) {
-      rc = pthread_create(&(thread_temp[iter]), NULL, consumers,
-                          thread_storage) != 0;
-      if (rc != 0) {
-        return EXIT_FAILURE;
-      }
+    rc = pthread_create(&(thread_temp[iter]), NULL, consumers,
+                        thread_storage) != 0;
+    if (rc != 0) {
+      return EXIT_FAILURE;
+    }
   }
   serve_requests(thread_storage);
   return 0;
