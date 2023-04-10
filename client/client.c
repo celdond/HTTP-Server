@@ -14,6 +14,7 @@
 #include <unistd.h>
 
 #include "util.h"
+#include "drone.h"
 
 #define REQUESTS "./requests"
 #define FILES "./request_files"

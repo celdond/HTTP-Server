@@ -1,10 +1,10 @@
-CFLAGS = -Wall -Wextra -pedantic -Wshadow
+CFLAGS = -Wall -Wextra -pedantic -Wshadow -pthread -O2 -g
 CC = clang $(CFLAGS)
 
 all		:client
 
-client		:client.o util.o
-	$(CC) -o client client.o util.o
+client		:client.o util.o drone.o
+	$(CC) -o client client.o util.o drone.o
 
 client.o	:client.c
 	$(CC) -c client.c
@@ -12,5 +12,8 @@ client.o	:client.c
 util.o		:util.c util.h
 	$(CC) -c util.c util.h
 
+drone.o		:drone.c drone.h
+	$(CC) -c drone.c drone.h
+
 clean:
-	rm -rf client client.o util.o util.h.gch
+	rm -rf client client.o util.o util.h.gch drone.o drone.h.gch
