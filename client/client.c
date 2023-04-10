@@ -11,12 +11,17 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <pthread.h>
 
 #include "util.h"
 
 #define REQUESTS "./requests"
 #define FILES "./request_files"
 #define DEFAULT 1
+
+pthread_mutex_t pc_lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t empty_sig = PTHREAD_COND_INITIALIZER;
+pthread_cond_t full_sig = PTHREAD_COND_INITIALIZER;
 
 static void sigterm_handler(int sig) {
         if (sig == SIGTERM || sig == SIGINT) {
@@ -29,7 +34,7 @@ static void sigterm_handler(int sig) {
                         while (thread_op->count == thread_op->max_count) {
                                 pthread_cond_wait(&full_sig, &pc_lock);
                         }
-                        thread_op->work_buffer[thread_op->in] = -1;
+                        thread_op->work_buffer[thread_op->in]->method = 'R';
                         thread_op->in = (thread_op->in + 1) % thread_op->max_count;
                         thread_op->count += 1;
                         pthread_cond_signal(&empty_sig);
@@ -205,12 +210,46 @@ int delete_client(int conn, char *file_name) {
   return r;
 }
 
-int serve_requests(int conn) {
+void *consumers(void *thread_storage) {
+    struct threa *t = thread_storage;
+    int connfd = t->connfd;
+    int connection;
+    char method;
+    char *file_name;
+    while (1) {
+        if (pthread_mutex_lock(&pc_lock) != 0) {
+            perror("Mutex Error");
+            continue;
+        }
+
+        while (t->count == 0) {
+            pthread_cond_wait(&empty_sig, &pc_lock);
+        }
+        method = t->work_buffer[t->out]->method;
+	file_name = t->work_buffer[t->out]->file;
+        t->out = (t->out + 1) % t->max_count;
+        t->count -= 1;
+        pthread_cond_signal(&full_sig);
+
+        pthread_mutex_unlock(&pc_lock);
+
+        if (method == 'R') {
+            return NULL;
+        }
+
+	connection = create_client_socket(connfd);
+        // Handle request
+	close(connection);
+    }
+}
+
+int serve_requests(struct threa *t) {
   struct dirent *d;
   DIR *directory;
   FILE *f;
   char *filename = (char *)calloc(1024, sizeof(char));
   struct link_list *l = create_list();
+  int connfd = t->connfd;
 
   if ((directory = opendir(REQUESTS)) == NULL) {
     free(filename);
@@ -283,11 +322,7 @@ int serve_requests(int conn) {
   closedir(directory);
 
   struct node *file_iterator = l->head;
-  char *response = (char *)calloc(1024, sizeof(char));
-  ssize_t in = 0;
-  int r = -1;
   while (file_iterator != NULL) {
-    int connection = create_client_socket(conn);
     if (file_iterator->command == 'H') {
       r = head_client(connection, file_iterator->file_name);
     } else if (file_iterator->command == 'G') {
@@ -299,12 +334,6 @@ int serve_requests(int conn) {
     } else {
       file_iterator = file_iterator->next;
     }
-    if (r > 0) {
-      while ((in = recv(connection, response, 1024, 0)) > 0) {
-        printf("%s", response);
-      }
-    }
-    close(connection);
     file_iterator = file_iterator->next;
   }
 
@@ -353,12 +382,12 @@ int main(int argc, char *argv[]) {
   thread_list = thread_temp;
   int rc = 0;
   for (int iter = 0; iter < threads; iter++) {
-    rc = pthread_create(&(thread_temp[iter]), NULL, consumers,
-                        thread_storage) != 0;
-    if (rc != 0) {
-      return EXIT_FAILURE;
-    }
+      rc = pthread_create(&(thread_temp[iter]), NULL, consumers,
+                          thread_storage) != 0;
+      if (rc != 0) {
+        return EXIT_FAILURE;
+      }
   }
-  serve_requests(port);
+  serve_requests(thread_storage);
   return 0;
 }
