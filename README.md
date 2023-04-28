@@ -30,6 +30,12 @@ or
 ```bash
 make all
 ```
+To run the server:
+```bash
+./httpserver [port] -N [thread count]
+```
+port: the port number the server will be listening to.
+thread count: the number of worker threads the server will use.
 
 ### Client
 
@@ -42,3 +48,27 @@ or
 ```bash
 make all
 ```
+
+To run the client:
+```bash
+./client [port] -N [thread count]
+```
+port: the port number the client will send requests to.
+thread count: the number of worker threads the client will use to send requests.
+
+## Functionality
+
+### Server
+
+The server uses HTTP methods as an interface to provide file transfer.  Server functionality is tied
+specifically to HTTP requests, and it will wait until it has received such a request to operate.
+
+#### Methods
+
+##### HEAD
+
+##### GET
+
+##### DELETE
+
+##### PUT
