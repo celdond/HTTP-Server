@@ -126,3 +126,6 @@ Example:
 GET,Example.txt
 
 ```
+
+Files that are to be put onto the server need to be placed in the Request_Files folder for the client to
+access.
