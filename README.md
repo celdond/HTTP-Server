@@ -35,6 +35,7 @@ To run the server:
 ./httpserver [port] -N [thread count]
 ```
 port: the port number the server will be listening to.
+
 thread count: the number of worker threads the server will use.
 
 ### Client
@@ -54,6 +55,7 @@ To run the client:
 ./client [port] -N [thread count]
 ```
 port: the port number the client will send requests to.
+
 thread count: the number of worker threads the client will use to send requests.
 
 ## Functionality
@@ -63,12 +65,64 @@ thread count: the number of worker threads the client will use to send requests.
 The server uses HTTP methods as an interface to provide file transfer.  Server functionality is tied
 specifically to HTTP requests, and it will wait until it has received such a request to operate.
 
+All files for the server are located in the files folder
+
 #### Methods
 
 ##### HEAD
 
+```bash
+HEAD /[filename] HTTP/1.1
+```
+
+Returns the length of the specified file in the server.
+
 ##### GET
+
+```bash
+GET /[filename] HTTP/1.1
+```
+
+Returns the specified file in the server.
 
 ##### DELETE
 
+```bash
+DELETE /[filename] HTTP/1.1
+```
+
+Deletes the specified file from the server.
+
 ##### PUT
+
+```bash
+PUT /[filename] HTTP/1.1
+Content-Length: [file-length]
+```
+
+Places the specified file from the client to the server.
+
+### Client
+
+While unnecessary for use of the server, bundled in the repository is a client server specifically created 
+to request file transfer with a HTTP server.
+
+#### Request Creation
+
+The client manages request by reading text files in the requests folder.
+
+Request files follow a format similar to csv files, where each entry is on 
+a new line with the required information being separated by a comma.
+
+```bash
+[METHOD],[FILE_NAME]
+[METHOD],[FILE_NAME]
+
+```
+
+Example:
+
+```bash
+GET,Example.txt
+
+```
