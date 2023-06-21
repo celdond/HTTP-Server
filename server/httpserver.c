@@ -8,7 +8,6 @@
 #include <ctype.h>
 #include <pthread.h>
 #include <signal.h>
-#include <pthread.h>
 
 #include "drone.h"
 #include "server.h"

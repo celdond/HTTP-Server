@@ -28,7 +28,7 @@ struct threa {
 	int connfd;
 };
 
-struct threa *create_thread_sheet(int thread_count, int max_count);
+struct threa *create_thread_sheet(int thread_count, int max_count, int connfd);
 
 void free_threa(struct threa *t);
 #endif

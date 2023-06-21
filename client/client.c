@@ -12,10 +12,12 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <signal.h>
 
 #include "util.h"
 #include "drone.h"
 
+#define OPTIONS "t:"
 #define REQUESTS "./requests"
 #define FILES "./request_files"
 #define DEFAULT 1
@@ -23,6 +25,49 @@
 pthread_mutex_t pc_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t empty_sig = PTHREAD_COND_INITIALIZER;
 pthread_cond_t full_sig = PTHREAD_COND_INITIALIZER;
+
+int acquire_file(struct threa *t, char *file_name, char verb) {
+    int index = -1;
+    int type = 0;
+    pthread_mutex_lock(&(t->file_lock));
+    for (int i = 0; i < t->thread_count; i++) {
+        if (!(t->files[i][0]) && index == -1) {
+            index = i;
+        }
+        if (t->files[i][0] == file_name[0]) {
+            if (strncmp(t->files[i], file_name, 254) == 0) {
+                type = 1;
+                index = i;
+                break;
+            }
+        }
+    }
+    if (type != 1) {
+        strncpy(t->files[index], file_name, 255);
+    }
+    t->wanters[index] += 1;
+    pthread_mutex_unlock(&(t->file_lock));
+    int iter = index;
+    if (verb == 'P') {
+        pthread_rwlock_rdlock(&t->l[index]);
+    } else {
+        pthread_rwlock_wrlock(&t->l[index]);
+    }
+    return iter;
+}
+
+void drop_file(struct threa *t, int iter) {
+    pthread_mutex_lock(&(t->file_lock));
+    t->wanters[iter] -= 1;
+    if (t->wanters[iter] == 0) {
+        for (int i = 0; i < 20; i++) {
+            t->files[iter][i] = '\0';
+        }
+    }
+    pthread_mutex_unlock(&(t->file_lock));
+    pthread_rwlock_unlock(&t->l[iter]);
+    return;
+}
 
 static void sigterm_handler(int sig) {
   if (sig == SIGTERM || sig == SIGINT) {
@@ -35,7 +80,7 @@ static void sigterm_handler(int sig) {
       while (thread_op->count == thread_op->max_count) {
         pthread_cond_wait(&full_sig, &pc_lock);
       }
-      thread_op->work_buffer[thread_op->in]->method = 'R';
+      thread_op->work_buffer[thread_op->in].method = 'R';
       thread_op->in = (thread_op->in + 1) % thread_op->max_count;
       thread_op->count += 1;
       pthread_cond_signal(&empty_sig);
@@ -122,6 +167,45 @@ int send_request(int conn, char *method, char *file_name) {
   }
   free(pack);
   return 1;
+}
+
+void print_response(int connfd, char *file_name, struct threa *t) {
+	char *path = (char *)calloc(255, sizeof(char));
+	strncpy(path, "./results/", 9);
+
+	int i = 0;
+	int j = 8;
+	while(!isspace((int)(file_name[i])) && ((j < 254) && (i < 254))) {
+		path[j] = file_name[i];
+		i++;
+		j++;
+	}
+	path[j] = '\0';
+	int lock_index = acquire_file(t, file_name, 'P');
+    if (access(file_name, F_OK) != 0) {
+        if (errno == EACCES) {
+		drop_file(t, lock_index);
+            perror("Forbidden\n");
+            return;
+        }
+    }
+
+    int filefd = open(file_name, O_CREAT | O_WRONLY | O_TRUNC, 0644);
+    if (filefd == -1) {
+	    drop_file(t, lock_index);
+        return;
+    }
+
+    char *buffer = (char *)calloc(4096, sizeof(char));
+    int in = 0;
+    while((in = recv(connfd, buffer, 4096, 0)) < 0) {
+	    write(filefd, buffer, in);
+    }
+
+    close(filefd);
+    drop_file(t, lock_index);
+    free(buffer);
+    return;
 }
 
 int head_client(int conn, char *file_name) {
@@ -226,8 +310,8 @@ void *consumers(void *thread_storage) {
     while (t->count == 0) {
       pthread_cond_wait(&empty_sig, &pc_lock);
     }
-    method = t->work_buffer[t->out]->method;
-    file_name = t->work_buffer[t->out]->file;
+    method = t->work_buffer[t->out].method;
+    file_name = *t->work_buffer[t->out].file;
     t->out = (t->out + 1) % t->max_count;
     t->count -= 1;
     pthread_cond_signal(&full_sig);
@@ -256,7 +340,6 @@ int serve_requests(struct threa *t) {
   FILE *f;
   char *filename = (char *)calloc(1024, sizeof(char));
   struct link_list *l = create_list();
-  int connfd = t->connfd;
 
   if ((directory = opendir(REQUESTS)) == NULL) {
     free(filename);
@@ -337,8 +420,8 @@ int serve_requests(struct threa *t) {
     while (t->count == t->max_count) {
       pthread_cond_wait(&full_sig, &pc_lock);
     }
-    t->work_buffer[t->in]->method = file_iterator->command;
-    t->work_buffer[t->in]->file_name = file_iterator->file_name;
+    t->work_buffer[t->in].method = file_iterator->command;
+    t->work_buffer[t->in].file = &file_iterator->file_name;
     t->in = (t->in + 1) % t->max_count;
     t->count += 1;
     pthread_cond_signal(&empty_sig);
@@ -347,7 +430,6 @@ int serve_requests(struct threa *t) {
     file_iterator = file_iterator->next;
   }
 
-  free(response);
   delete_list(l);
   return 0;
 }
@@ -378,7 +460,7 @@ int main(int argc, char *argv[]) {
     err(EXIT_FAILURE, "Invalid Port");
   }
 
-  struct threa *thread_storage = create_thread_sheet(threads, 1024);
+  struct threa *thread_storage = create_thread_sheet(threads, 1024, connection_port);
   if (thread_storage == NULL) {
     return EXIT_FAILURE;
   }

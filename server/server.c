@@ -178,14 +178,13 @@ void get_file(int connfd, char *file_name, struct threa *t) {
 
 void put_file(int connfd, char *file_name, ssize_t size, struct threa *t) {
     int result_message = 200;
-    int lock_index = acquire_file(t, file_name, 'G');
+    int lock_index = acquire_file(t, file_name, 'P');
     if (access(file_name, F_OK) != 0) {
         if (errno == EACCES) {
 		drop_file(t, lock_index);
             send_message(connfd, 403, "Forbidden", 0);
             return;
         } else if (errno == ENOENT) {
-		drop_file(t, lock_index);
             result_message = 201;
         }
     }
