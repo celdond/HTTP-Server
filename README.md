@@ -85,6 +85,8 @@ GET /[filename] HTTP/1.1
 
 Returns the specified file in the server.
 
+Returned file will contain the HTTP Request Response appended at the top of it.
+
 ##### DELETE
 
 ```bash
