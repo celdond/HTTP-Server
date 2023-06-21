@@ -14,7 +14,7 @@ struct threa *create_thread_sheet(int thread_count, int max_count) {
     t->wanters = (int *)calloc(thread_count, sizeof(int));
     t->l = (pthread_rwlock_t *)calloc(thread_count, sizeof(pthread_rwlock_t));
     for (int i = 0; i < thread_count; i++) {
-        t->files[i] = calloc(20, sizeof(char));
+        t->files[i] = calloc(255, sizeof(char));
         pthread_rwlock_init(&t->l[i], NULL);
         create_thread_sheet_locks(t, i);
     }

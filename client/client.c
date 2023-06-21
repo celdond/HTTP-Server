@@ -5,6 +5,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <pthread.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,10 +13,9 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <signal.h>
 
-#include "util.h"
 #include "drone.h"
+#include "util.h"
 
 #define OPTIONS "t:"
 #define REQUESTS "./requests"
@@ -27,46 +27,46 @@ pthread_cond_t empty_sig = PTHREAD_COND_INITIALIZER;
 pthread_cond_t full_sig = PTHREAD_COND_INITIALIZER;
 
 int acquire_file(struct threa *t, char *file_name, char verb) {
-    int index = -1;
-    int type = 0;
-    pthread_mutex_lock(&(t->file_lock));
-    for (int i = 0; i < t->thread_count; i++) {
-        if (!(t->files[i][0]) && index == -1) {
-            index = i;
-        }
-        if (t->files[i][0] == file_name[0]) {
-            if (strncmp(t->files[i], file_name, 254) == 0) {
-                type = 1;
-                index = i;
-                break;
-            }
-        }
+  int index = -1;
+  int type = 0;
+  pthread_mutex_lock(&(t->file_lock));
+  for (int i = 0; i < t->thread_count; i++) {
+    if (!(t->files[i][0]) && index == -1) {
+      index = i;
     }
-    if (type != 1) {
-        strncpy(t->files[index], file_name, 255);
+    if (t->files[i][0] == file_name[0]) {
+      if (strncmp(t->files[i], file_name, 254) == 0) {
+        type = 1;
+        index = i;
+        break;
+      }
     }
-    t->wanters[index] += 1;
-    pthread_mutex_unlock(&(t->file_lock));
-    int iter = index;
-    if (verb == 'P') {
-        pthread_rwlock_rdlock(&t->l[index]);
-    } else {
-        pthread_rwlock_wrlock(&t->l[index]);
-    }
-    return iter;
+  }
+  if (type != 1) {
+    strncpy(t->files[index], file_name, 255);
+  }
+  t->wanters[index] += 1;
+  pthread_mutex_unlock(&(t->file_lock));
+  int iter = index;
+  if (verb == 'G') {
+    pthread_rwlock_rdlock(&t->l[index]);
+  } else {
+    pthread_rwlock_wrlock(&t->l[index]);
+  }
+  return iter;
 }
 
 void drop_file(struct threa *t, int iter) {
-    pthread_mutex_lock(&(t->file_lock));
-    t->wanters[iter] -= 1;
-    if (t->wanters[iter] == 0) {
-        for (int i = 0; i < 20; i++) {
-            t->files[iter][i] = '\0';
-        }
+  pthread_mutex_lock(&(t->file_lock));
+  t->wanters[iter] -= 1;
+  if (t->wanters[iter] == 0) {
+    for (int i = 0; i < 255; i++) {
+      t->files[iter][i] = '\0';
     }
-    pthread_mutex_unlock(&(t->file_lock));
-    pthread_rwlock_unlock(&t->l[iter]);
-    return;
+  }
+  pthread_mutex_unlock(&(t->file_lock));
+  pthread_rwlock_unlock(&t->l[iter]);
+  return;
 }
 
 static void sigterm_handler(int sig) {
@@ -170,42 +170,42 @@ int send_request(int conn, char *method, char *file_name) {
 }
 
 void print_response(int connfd, char *file_name, struct threa *t) {
-	char *path = (char *)calloc(255, sizeof(char));
-	strncpy(path, "./results/", 9);
+  char *path = (char *)calloc(255, sizeof(char));
+  strncpy(path, "./results/", 10);
 
-	int i = 0;
-	int j = 8;
-	while(!isspace((int)(file_name[i])) && ((j < 254) && (i < 254))) {
-		path[j] = file_name[i];
-		i++;
-		j++;
-	}
-	path[j] = '\0';
-	int lock_index = acquire_file(t, file_name, 'P');
-    if (access(file_name, F_OK) != 0) {
-        if (errno == EACCES) {
-		drop_file(t, lock_index);
-            perror("Forbidden\n");
-            return;
-        }
+  int i = 0;
+  int j = 10;
+  while (!isspace((int)(file_name[i])) && ((j < 254) && (i < 254))) {
+    path[j] = file_name[i];
+    i++;
+    j++;
+  }
+  path[j] = '\0';
+  int lock_index = acquire_file(t, file_name, 'P');
+  if (access(file_name, F_OK) != 0) {
+    if (errno == EACCES) {
+      drop_file(t, lock_index);
+      perror("Forbidden\n");
+      return;
     }
+  }
 
-    int filefd = open(file_name, O_CREAT | O_WRONLY | O_TRUNC, 0644);
-    if (filefd == -1) {
-	    drop_file(t, lock_index);
-        return;
-    }
-
-    char *buffer = (char *)calloc(4096, sizeof(char));
-    int in = 0;
-    while((in = recv(connfd, buffer, 4096, 0)) < 0) {
-	    write(filefd, buffer, in);
-    }
-
-    close(filefd);
+  int filefd = open(file_name, O_CREAT | O_WRONLY | O_TRUNC, 0644);
+  if (filefd == -1) {
     drop_file(t, lock_index);
-    free(buffer);
     return;
+  }
+
+  char *buffer = (char *)calloc(4096, sizeof(char));
+  int in = 0;
+  while ((in = recv(connfd, buffer, 4096, 0)) < 0) {
+    write(filefd, buffer, in);
+  }
+
+  close(filefd);
+  drop_file(t, lock_index);
+  free(buffer);
+  return;
 }
 
 int head_client(int conn, char *file_name) {
@@ -223,8 +223,8 @@ int put_client(int conn, char *file_name) {
   if (!(path)) {
     return -1;
   }
-  strncpy(path, "request_files/", 14);
-  int j = 14;
+  strncpy(path, "./request_files/", 16);
+  int j = 16;
   int i = 0;
   while (!isspace((int)(file_name[i])) && ((j < 254))) {
     path[j] = file_name[i];
@@ -285,6 +285,7 @@ int put_client(int conn, char *file_name) {
     }
   }
 
+  fprintf(stderr, "REACHED\n");
   free(buffer);
   close(filefd);
   return 1;
@@ -320,16 +321,17 @@ void *consumers(void *thread_storage) {
 
     connection = create_client_socket(connfd);
     if (method == 'H') {
-      head_client(connfd, file_name);
+      head_client(connection, file_name);
     } else if (method == 'G') {
-      get_client(connfd, file_name);
+      get_client(connection, file_name);
     } else if (method == 'D') {
-      delete_client(connfd, file_name);
+      delete_client(connection, file_name);
     } else if (method == 'P') {
-      put_client(connfd, file_name);
+      put_client(connection, file_name);
     } else {
       return NULL;
     }
+    print_response(connection, file_name, t);
     close(connection);
   }
 }
@@ -460,7 +462,8 @@ int main(int argc, char *argv[]) {
     err(EXIT_FAILURE, "Invalid Port");
   }
 
-  struct threa *thread_storage = create_thread_sheet(threads, 1024, connection_port);
+  struct threa *thread_storage =
+      create_thread_sheet(threads, 1024, connection_port);
   if (thread_storage == NULL) {
     return EXIT_FAILURE;
   }
@@ -481,5 +484,6 @@ int main(int argc, char *argv[]) {
     }
   }
   serve_requests(thread_storage);
+  sigterm_handler(SIGTERM);
   return 0;
 }

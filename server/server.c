@@ -5,7 +5,7 @@ int acquire_file(struct threa *t, char *file_name, char verb) {
     int type = 0;
     pthread_mutex_lock(&(t->file_lock));
     for (int i = 0; i < t->thread_count; i++) {
-        if (!(t->files[i][0]) && index == -1) {
+        if (!t->files[i][0] && index == -1) {
             index = i;
         }
         if (t->files[i][0] == file_name[0]) {
@@ -22,7 +22,7 @@ int acquire_file(struct threa *t, char *file_name, char verb) {
     t->wanters[index] += 1;
     pthread_mutex_unlock(&(t->file_lock));
     int iter = index;
-    if (verb == 'P') {
+    if (verb == 'G') {
         pthread_rwlock_rdlock(&t->l[index]);
     } else {
         pthread_rwlock_wrlock(&t->l[index]);
@@ -34,7 +34,7 @@ void drop_file(struct threa *t, int iter) {
     pthread_mutex_lock(&(t->file_lock));
     t->wanters[iter] -= 1;
     if (t->wanters[iter] == 0) {
-        for (int i = 0; i < 20; i++) {
+        for (int i = 0; i < 255; i++) {
             t->files[iter][i] = '\0';
         }
     }
@@ -220,7 +220,7 @@ void put_file(int connfd, char *file_name, ssize_t size, struct threa *t) {
 }
 
 void delete_file(int connfd, char *file_name, struct threa *t) {
-	int lock_index = acquire_file(t, file_name, 'G');
+	int lock_index = acquire_file(t, file_name, 'P');
 	if (file_check(file_name, connfd) < 0) {
 		drop_file(t, lock_index);
             return;
