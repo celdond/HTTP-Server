@@ -432,6 +432,7 @@ int serve_requests(struct threa *t) {
     file_iterator = file_iterator->next;
   }
 
+  sigterm_handler(SIGTERM);
   delete_list(l);
   return 0;
 }
@@ -484,6 +485,5 @@ int main(int argc, char *argv[]) {
     }
   }
   serve_requests(thread_storage);
-  sigterm_handler(SIGTERM);
   return 0;
 }
