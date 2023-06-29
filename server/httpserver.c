@@ -13,7 +13,7 @@
 #include "server.h"
 
 #define OPTIONS "t:"
-#define DEFAULT 1
+#define DEFAULT 2
 
 pthread_mutex_t pc_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t empty_sig = PTHREAD_COND_INITIALIZER;
@@ -42,7 +42,7 @@ static void sigterm_handler(int sig) {
         	for (int i = 0; i < thread_op->thread_count; i++) {
             		pthread_join(thread_list[i], &data);
             		if (data != NULL) {
-                		free(data);
+                		// free(data);
             		}
         	}
 

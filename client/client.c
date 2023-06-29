@@ -20,7 +20,7 @@
 #define OPTIONS "t:"
 #define REQUESTS "./requests"
 #define FILES "./request_files"
-#define DEFAULT 1
+#define DEFAULT 2
 
 pthread_mutex_t pc_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t empty_sig = PTHREAD_COND_INITIALIZER;
@@ -82,6 +82,7 @@ static void sigterm_handler(int sig) {
       }
       thread_op->work_buffer[thread_op->in].method = 'R';
       thread_op->in = (thread_op->in + 1) % thread_op->max_count;
+      thread_op->work_buffer[thread_op->in].file = NULL;
       thread_op->count += 1;
       pthread_cond_signal(&empty_sig);
 
@@ -318,6 +319,10 @@ void *consumers(void *thread_storage) {
     pthread_cond_signal(&full_sig);
 
     pthread_mutex_unlock(&pc_lock);
+    if (method == 'R') {
+	    fprintf(stderr, "%s\n", file_name);
+	    return NULL;
+    }
 
     connection = create_client_socket(connfd);
     if (method == 'H') {
