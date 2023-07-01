@@ -164,7 +164,6 @@ void handle_request(int connfd, struct threa *t) {
 			}
 		}
 	}
-	printf("%d\n", length);
 
 	if (strncmp(method, "HEAD", 4) == 0) {
 		head(connfd, path, t);
