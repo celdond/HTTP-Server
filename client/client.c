@@ -170,7 +170,62 @@ int send_request(int conn, char *method, char *file_name) {
   return 1;
 }
 
+ssize_t reader(int connection_port, char *buffer, ssize_t size) {
+        ssize_t i = 0;
+        char terminate = '\0';
+        ssize_t read = 0;
+
+        while ((i < size - 1) && (terminate != '\n')) {
+                read = recv(connection_port, &terminate, 1, 0);
+                if (read > 0) {
+                        buffer[i] = terminate;
+                        i++;
+                } else {
+                        terminate = '\n';
+                }
+        }
+        if (buffer[0] == '\r') {
+                return 0;
+        }
+        buffer[i] = '\0';
+        return i;
+}
+
+int check_response(int connfd, struct threa *t) {
+	char *buffer = (char *)calloc(1024, sizeof(char));
+
+	ssize_t size = reader(connfd, buffer, 1024);
+	i = 0;
+	while(!isspace((int)(buffer[i])) && (i < size)) {
+                i++;
+        }
+
+	char *code = char *method = (char *)calloc(4, sizeof(char));
+	j = 0;
+	while(!isspace((int)(buffer[i])) && (i < size)) {
+		if (j > 2) {
+			free(code);
+			free(buffer);
+			return -1;
+		}
+		code[j] = buffer[i];
+		i++;
+		j++;
+	}
+	code[j] = '\0';
+
+	if (strncmp(code, "200", 3) != 0) {
+                free(code);
+                free(buffer);
+                return -1;
+        }
+	free(code);
+	free(buffer);
+	return 1;
+}
+
 void print_response(int connfd, char *file_name, struct threa *t) {
+
   char *path = (char *)calloc(255, sizeof(char));
   strncpy(path, "./results/", 10);
 
@@ -199,7 +254,7 @@ void print_response(int connfd, char *file_name, struct threa *t) {
 
   char *buffer = (char *)calloc(4096, sizeof(char));
   int in = 0;
-  while ((in = recv(connfd, buffer, 4096, 0)) < 0) {
+  while ((in = recv(connfd, buffer, 4096, 0)) > 0) {
 	  fprintf(stderr, "%d\n", in);
     write(filefd, buffer, in);
   }
