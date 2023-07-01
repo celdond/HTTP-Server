@@ -158,9 +158,8 @@ void get_file(int connfd, char *file_name, struct threa *t) {
     ssize_t i = size;
 
     send_message(connfd, 200, "OK", size);
-    ssize_t read_b;
+    ssize_t read_b = 0;
     while (i > 0) {
-	fprintf(stderr, "%zd\n", read_b);
         i -= read_b;
         if (send(connfd, buffer, read_b, 0) < 0) {
             close(filefd);

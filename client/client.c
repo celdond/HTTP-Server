@@ -191,17 +191,19 @@ ssize_t reader(int connection_port, char *buffer, ssize_t size) {
         return i;
 }
 
-int check_response(int connfd, struct threa *t) {
+int check_response(int connfd) {
 	char *buffer = (char *)calloc(1024, sizeof(char));
 
 	ssize_t size = reader(connfd, buffer, 1024);
-	i = 0;
+	int i = 0;
+	int j = 0;
 	while(!isspace((int)(buffer[i])) && (i < size)) {
                 i++;
         }
 
-	char *code = char *method = (char *)calloc(4, sizeof(char));
+	char *code = (char *)calloc(4, sizeof(char));
 	j = 0;
+	i++;
 	while(!isspace((int)(buffer[i])) && (i < size)) {
 		if (j > 2) {
 			free(code);
@@ -213,12 +215,15 @@ int check_response(int connfd, struct threa *t) {
 		j++;
 	}
 	code[j] = '\0';
-
+	fprintf(stderr, "%s\n", code);
 	if (strncmp(code, "200", 3) != 0) {
                 free(code);
                 free(buffer);
                 return -1;
         }
+
+	// Grab First Header
+	size = reader(connfd, buffer, 1024);
 	free(code);
 	free(buffer);
 	return 1;
@@ -226,6 +231,9 @@ int check_response(int connfd, struct threa *t) {
 
 void print_response(int connfd, char *file_name, struct threa *t) {
 
+	if (check_response(connfd) < 0) {
+		return;
+	}
   char *path = (char *)calloc(255, sizeof(char));
   strncpy(path, "./results/", 10);
 
