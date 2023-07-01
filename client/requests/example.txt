@@ -1,3 +1,7 @@
 GET,new.txt
 PUT,new.txt
+GET,new.txt
+PUT,new.txt
+GET,new.txt
+PUT,new.txt
 

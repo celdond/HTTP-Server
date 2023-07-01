@@ -182,7 +182,7 @@ void print_response(int connfd, char *file_name, struct threa *t) {
     j++;
   }
   path[j] = '\0';
-  int lock_index = acquire_file(t, file_name, 'P');
+  int lock_index = acquire_file(t, path, 'P');
   if (access(file_name, F_OK) != 0) {
     if (errno == EACCES) {
       drop_file(t, lock_index);
@@ -191,7 +191,7 @@ void print_response(int connfd, char *file_name, struct threa *t) {
     }
   }
 
-  int filefd = open(file_name, O_CREAT | O_WRONLY | O_TRUNC, 0644);
+  int filefd = open(path, O_CREAT | O_WRONLY | O_TRUNC, 0644);
   if (filefd == -1) {
     drop_file(t, lock_index);
     return;
@@ -200,6 +200,7 @@ void print_response(int connfd, char *file_name, struct threa *t) {
   char *buffer = (char *)calloc(4096, sizeof(char));
   int in = 0;
   while ((in = recv(connfd, buffer, 4096, 0)) < 0) {
+	  fprintf(stderr, "%d\n", in);
     write(filefd, buffer, in);
   }
 
@@ -286,7 +287,6 @@ int put_client(int conn, char *file_name) {
     }
   }
 
-  fprintf(stderr, "REACHED\n");
   free(buffer);
   close(filefd);
   return 1;
@@ -313,16 +313,16 @@ void *consumers(void *thread_storage) {
       pthread_cond_wait(&empty_sig, &pc_lock);
     }
     method = t->work_buffer[t->out].method;
-    file_name = *t->work_buffer[t->out].file;
+    if (method != 'R') {
+    	file_name = *t->work_buffer[t->out].file;
+    } else {
+	file_name = NULL;
+    }
     t->out = (t->out + 1) % t->max_count;
     t->count -= 1;
     pthread_cond_signal(&full_sig);
 
     pthread_mutex_unlock(&pc_lock);
-    if (method == 'R') {
-	    fprintf(stderr, "%s\n", file_name);
-	    return NULL;
-    }
 
     connection = create_client_socket(connfd);
     if (method == 'H') {
