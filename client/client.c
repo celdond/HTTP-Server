@@ -25,6 +25,7 @@
 pthread_mutex_t pc_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t empty_sig = PTHREAD_COND_INITIALIZER;
 pthread_cond_t full_sig = PTHREAD_COND_INITIALIZER;
+struct link_list *reference = NULL;
 
 int acquire_file(struct threa *t, char *file_name, char verb) {
   int index = -1;
@@ -98,6 +99,10 @@ static void sigterm_handler(int sig) {
     }
 
     free_threa(thread_op);
+
+    if (reference != NULL) {
+    	delete_list(reference);
+    }
     exit(EXIT_SUCCESS);
   }
 }
@@ -399,7 +404,7 @@ void *consumers(void *thread_storage) {
     } else {
       return NULL;
     }
-    print_response(connection, file_name, t);
+    // print_response(connection, file_name, t);
     close(connection);
   }
 }
@@ -410,6 +415,7 @@ int serve_requests(struct threa *t) {
   FILE *f;
   char *filename = (char *)calloc(1024, sizeof(char));
   struct link_list *l = create_list();
+  reference = l;
 
   if ((directory = opendir(REQUESTS)) == NULL) {
     free(filename);
@@ -501,6 +507,7 @@ int serve_requests(struct threa *t) {
   }
 
   sigterm_handler(SIGTERM);
+  fprintf(stderr, "Reached Baby\n");
   delete_list(l);
   return 0;
 }
