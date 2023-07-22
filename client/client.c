@@ -196,6 +196,45 @@ ssize_t reader(int connection_port, char *buffer, ssize_t size) {
         return i;
 }
 
+ssize_t grab_length(char *buffer, ssize_t i) {
+    ssize_t l = 0;
+    for (;; i++) {
+        if (buffer[i] == ' ') {
+            return -1;
+        }
+        if (isdigit((unsigned char) buffer[i]) == 0) {
+            break;
+        } else {
+            l *= 10;
+            l += buffer[i] - '0';
+        }
+    }
+    return l;
+}
+
+int header_check(char *buffer, ssize_t size) {
+    ssize_t x = 0;
+    while (x < size) {
+        if (buffer[x] == ':') {
+            break;
+        }
+        if (buffer[x] == ' ') {
+            return -1;
+        }
+        x++;
+    }
+
+    char c = buffer[x];
+    while (c != '\r') {
+        if (c == ' ') {
+            return -1;
+        }
+        x++;
+        c = buffer[x];
+    }
+    return x;
+}
+
 int check_response(int connfd) {
 	char *buffer = (char *)calloc(1024, sizeof(char));
 
@@ -228,7 +267,25 @@ int check_response(int connfd) {
         }
 
 	// Grab First Header
-	size = reader(connfd, buffer, 1024);
+	int length = 0;
+       while ((size = reader(connfd, buffer, 1024)) > 0) {
+                if (size > 16) {
+                        if (strncmp(buffer, "Content-Length: ", 16) == 0) {
+                                length = grab_length(buffer, 16);
+                                if (length < 0) {
+					free(code);
+                                        free(buffer);
+                                        return -1;
+                                }
+                        }
+                } else {
+                        if (header_check(buffer, size) < 0) {
+                                free(buffer);
+                                free(code);
+                                return -1;
+                        }
+                }
+        }
 	free(code);
 	free(buffer);
 	return 1;
@@ -268,7 +325,6 @@ void print_response(int connfd, char *file_name, struct threa *t) {
   char *buffer = (char *)calloc(4096, sizeof(char));
   int in = 0;
   while ((in = recv(connfd, buffer, 4096, 0)) > 0) {
-	  fprintf(stderr, "%d\n", in);
     write(filefd, buffer, in);
   }
 
@@ -404,7 +460,7 @@ void *consumers(void *thread_storage) {
     } else {
       return NULL;
     }
-    // print_response(connection, file_name, t);
+    print_response(connection, file_name, t);
     close(connection);
   }
 }
