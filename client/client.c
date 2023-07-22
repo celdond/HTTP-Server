@@ -259,7 +259,6 @@ int check_response(int connfd) {
 		j++;
 	}
 	code[j] = '\0';
-	fprintf(stderr, "%s\n", code);
 	if (strncmp(code, "200", 3) != 0) {
                 free(code);
                 free(buffer);
@@ -288,12 +287,12 @@ int check_response(int connfd) {
         }
 	free(code);
 	free(buffer);
-	return 1;
+	return length;
 }
 
 void print_response(int connfd, char *file_name, struct threa *t) {
-
-	if (check_response(connfd) < 0) {
+	int length = 0;
+	if ((length = check_response(connfd)) < 0) {
 		return;
 	}
   char *path = (char *)calloc(255, sizeof(char));
@@ -323,9 +322,16 @@ void print_response(int connfd, char *file_name, struct threa *t) {
   }
 
   char *buffer = (char *)calloc(4096, sizeof(char));
-  int in = 0;
-  while ((in = recv(connfd, buffer, 4096, 0)) > 0) {
-    write(filefd, buffer, in);
+  ssize_t out, in = 0, to_go = length;
+  while (to_go > 0) {
+  	if ((in = recv(connfd, buffer, 4096, 0)) < 0) {
+  		close(filefd);
+		drop_file(t, lock_index);
+		free(buffer);
+		return;
+  	}
+	out = write(filefd, buffer, in);
+	to_go -= out;
   }
 
   close(filefd);
@@ -453,6 +459,7 @@ void *consumers(void *thread_storage) {
       head_client(connection, file_name);
     } else if (method == 'G') {
       get_client(connection, file_name);
+      print_response(connection, file_name, t);
     } else if (method == 'D') {
       delete_client(connection, file_name);
     } else if (method == 'P') {
@@ -460,7 +467,6 @@ void *consumers(void *thread_storage) {
     } else {
       return NULL;
     }
-    print_response(connection, file_name, t);
     close(connection);
   }
 }
