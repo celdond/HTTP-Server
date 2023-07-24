@@ -325,8 +325,10 @@ void print_response(int connfd, char *file_name, struct threa *t) {
 
   char *buffer = (char *)calloc(4096, sizeof(char));
   ssize_t out, in = 0, to_go = length;
+  fprintf(stderr, "%s\n", buffer);
   while (to_go > 0) {
     if ((in = recv(connfd, buffer, 4096, 0)) < 0) {
+	    perror("Read Error:");
       close(filefd);
       drop_file(t, lock_index);
       free(path);

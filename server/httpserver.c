@@ -258,7 +258,7 @@ void *consumers(void *thread_storage) {
     }
 
     handle_request(connfd, t);
-    close(connfd);
+    connfd = 0;
   }
 }
 

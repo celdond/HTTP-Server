@@ -1,4 +1,3 @@
+GET,nah.txt
 GET,new.txt
-PUT,new.txt
-HEAD,new.txt
 
