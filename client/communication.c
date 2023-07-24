@@ -1,4 +1,5 @@
-pthread_mutex_t pc_lock = PTHREAD_MUTEX_INITIALIZER;
+#include "communication.h"
+
 pthread_cond_t empty_sig = PTHREAD_COND_INITIALIZER;
 pthread_cond_t full_sig = PTHREAD_COND_INITIALIZER;
 

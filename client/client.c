@@ -16,12 +16,14 @@
 
 #include "drone.h"
 #include "util.h"
+#include "communication.h"
 
 #define OPTIONS "t:"
 #define REQUESTS "./requests"
 #define FILES "./request_files"
 #define DEFAULT 2
 
+pthread_mutex_t pc_lock = PTHREAD_MUTEX_INITIALIZER;
 struct link_list *reference = NULL;
 
 static void sigterm_handler(int sig) {
