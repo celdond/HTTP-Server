@@ -1,8 +1,5 @@
 #include "communication.h"
 
-pthread_cond_t empty_sig = PTHREAD_COND_INITIALIZER;
-pthread_cond_t full_sig = PTHREAD_COND_INITIALIZER;
-
 int acquire_file(struct threa *t, char *file_name, char verb) {
   int index = -1;
   int type = 0;
@@ -132,6 +129,29 @@ ssize_t grab_length(char *buffer, ssize_t i) {
   return l;
 }
 
+int header_check(char *buffer, ssize_t size) {
+  ssize_t x = 0;
+  while (x < size) {
+    if (buffer[x] == ':') {
+      break;
+    }
+    if (buffer[x] == ' ') {
+      return -1;
+    }
+    x++;
+  }
+
+  char c = buffer[x];
+  while (c != '\r') {
+    if (c == ' ') {
+      return -1;
+    }
+    x++;
+    c = buffer[x];
+  }
+  return x;
+}
+
 int check_response(int connfd) {
   char *buffer = (char *)calloc(1024, sizeof(char));
 
@@ -185,29 +205,6 @@ int check_response(int connfd) {
   free(code);
   free(buffer);
   return length;
-}
-
-int header_check(char *buffer, ssize_t size) {
-  ssize_t x = 0;
-  while (x < size) {
-    if (buffer[x] == ':') {
-      break;
-    }
-    if (buffer[x] == ' ') {
-      return -1;
-    }
-    x++;
-  }
-
-  char c = buffer[x];
-  while (c != '\r') {
-    if (c == ' ') {
-      return -1;
-    }
-    x++;
-    c = buffer[x];
-  }
-  return x;
 }
 
 void print_response(int connfd, char *file_name, struct threa *t) {

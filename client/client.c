@@ -10,7 +10,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
-#include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -24,6 +23,8 @@
 #define DEFAULT 2
 
 pthread_mutex_t pc_lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t empty_sig = PTHREAD_COND_INITIALIZER;
+pthread_cond_t full_sig = PTHREAD_COND_INITIALIZER;
 struct link_list *reference = NULL;
 
 static void sigterm_handler(int sig) {
