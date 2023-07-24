@@ -1,2 +1,4 @@
 GET,new.txt
+PUT,new.txt
+HEAD,new.txt
 
