@@ -278,6 +278,7 @@ int main(int argc, char *argv[]) {
   connection_port = strtol(argv[optind], &s, 10);
   if (connection_port <= 0 || *s != '\0') {
     err(EXIT_FAILURE, "Invalid Port");
+    return EXIT_FAILURE;
   }
 
   struct threa *thread_storage =

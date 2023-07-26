@@ -116,6 +116,12 @@ int send_request(int conn, char *method, char *file_name) {
   return 1;
 }
 
+// reader:
+// reads in from the port byte by byte
+// connection_port: port connection to listen to
+// buffer: storage for bytes read from the port
+// size: size of the buffer in bytes
+// return: number of bytes read
 ssize_t reader(int connection_port, char *buffer, ssize_t size) {
   ssize_t i = 0;
   char terminate = '\0';
@@ -137,6 +143,11 @@ ssize_t reader(int connection_port, char *buffer, ssize_t size) {
   return i;
 }
 
+// grab_length:
+// grabs the length of the content length header
+// buffer: storage containing the data to be read
+// i: current index in buffer
+// return: content-length as read by function
 ssize_t grab_length(char *buffer, ssize_t i) {
   ssize_t l = 0;
   for (;; i++) {
@@ -153,6 +164,11 @@ ssize_t grab_length(char *buffer, ssize_t i) {
   return l;
 }
 
+// header_check:
+// checks the headers to ensure proper format
+// buffer: storage containing header to check
+// size: size of the buffer in bytes
+// return: integer, positive for success
 int header_check(char *buffer, ssize_t size) {
   ssize_t x = 0;
   while (x < size) {
@@ -176,6 +192,10 @@ int header_check(char *buffer, ssize_t size) {
   return x;
 }
 
+// check_response:
+// takes in the connection that is being checked
+// connfd: connection descriptor
+// return: integer, where positive is success
 int check_response(int connfd) {
   char *buffer = (char *)calloc(1024, sizeof(char));
 
@@ -206,7 +226,7 @@ int check_response(int connfd) {
     return -1;
   }
 
-  // Grab First Header
+  // Check Headers
   int length = 0;
   while ((size = reader(connfd, buffer, 1024)) > 0) {
     if (size > 16) {
@@ -226,11 +246,17 @@ int check_response(int connfd) {
       }
     }
   }
+
   free(code);
   free(buffer);
   return length;
 }
 
+// print_response:
+// prints out the content sent from the connection descriptor
+// connfd: connection descriptor
+// file_name: name of the file to print
+// t: thread sheet
 void print_response(int connfd, char *file_name, struct threa *t) {
   int length = 0;
   if ((length = check_response(connfd)) < 0) {
@@ -287,16 +313,31 @@ void print_response(int connfd, char *file_name, struct threa *t) {
   return;
 }
 
+// head_client:
+// send a head request
+// conn: connection descriptor
+// file_name: file name to request
+// return: integer, positive for success
 int head_client(int conn, char *file_name) {
   int r = send_request(conn, "HEAD", file_name);
   return r;
 }
 
+// get_client:
+// send a get request
+// conn: connection descriptor
+// file_name: file name to request
+// return: integer, positive for success
 int get_client(int conn, char *file_name) {
   int r = send_request(conn, "GET", file_name);
   return r;
 }
 
+// put_client:
+// send a put request
+// conn: connection descriptor
+// file_name: file name to request
+// return: integer, positive for success
 int put_client(int conn, char *file_name) {
   char *path = (char *)calloc(1024, sizeof(char));
   if (!(path)) {
@@ -354,6 +395,7 @@ int put_client(int conn, char *file_name) {
   }
   free(pack);
 
+  // Send the file
   char *buffer = (char *)calloc(4096, sizeof(char));
   ssize_t read_bytes;
   while (size > 0) {
@@ -374,6 +416,11 @@ int put_client(int conn, char *file_name) {
   return 1;
 }
 
+// delete_client:
+// send a delete request
+// conn: connection descriptor
+// file_name: file name to request
+// return: integer, positive for success
 int delete_client(int conn, char *file_name) {
   int r = send_request(conn, "DELETE", file_name);
   return r;
