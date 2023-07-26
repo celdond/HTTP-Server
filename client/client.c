@@ -13,9 +13,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "communication.h"
 #include "drone.h"
 #include "util.h"
-#include "communication.h"
 
 #define OPTIONS "t:"
 #define REQUESTS "./requests"
@@ -27,9 +27,13 @@ pthread_cond_t empty_sig = PTHREAD_COND_INITIALIZER;
 pthread_cond_t full_sig = PTHREAD_COND_INITIALIZER;
 struct link_list *reference = NULL;
 
+// sigterm handler:
+// Handles Clean-Up on Program Termination and the End of the Program
+// Sig: Input Termination Signal
 static void sigterm_handler(int sig) {
   if (sig == SIGTERM || sig == SIGINT) {
 
+    // Sends All Threads a method to terminate their routine
     for (int i = 0; i < thread_op->thread_count; i++) {
       if (pthread_mutex_lock(&pc_lock) != 0) {
         perror("Mutex Error");
@@ -47,6 +51,7 @@ static void sigterm_handler(int sig) {
       pthread_mutex_unlock(&pc_lock);
     }
 
+    // Ensure Threads are Terminated Properly with join
     void *data;
     for (int i = 0; i < thread_op->thread_count; i++) {
       pthread_join(thread_list[i], &data);
@@ -64,6 +69,10 @@ static void sigterm_handler(int sig) {
   }
 }
 
+// create client socket:
+// Creates a connection socket to the specified server
+// connection port: Server Port Address
+// returns: socket descriptor
 static int create_client_socket(int connection_port) {
   int sock = socket(AF_INET, SOCK_STREAM, 0);
   if (sock < 0) {
@@ -83,13 +92,20 @@ static int create_client_socket(int connection_port) {
   return sock;
 }
 
+// consumers
+// Thread Functionality for processing requests
+// thread storage: threa struct
 void *consumers(void *thread_storage) {
   struct threa *t = thread_storage;
   int connfd = t->connfd;
   int connection;
   char method;
   char *file_name;
+
   while (1) {
+
+    // Lock to Receive Dished Request
+    // Waits for Requests to be served
     if (pthread_mutex_lock(&pc_lock) != 0) {
       perror("Mutex Error");
       continue;
@@ -99,6 +115,7 @@ void *consumers(void *thread_storage) {
       pthread_cond_wait(&empty_sig, &pc_lock);
     }
     method = t->work_buffer[t->out].method;
+
     if (method != 'R') {
       file_name = *t->work_buffer[t->out].file;
     } else {
@@ -109,6 +126,7 @@ void *consumers(void *thread_storage) {
     pthread_cond_signal(&full_sig);
 
     pthread_mutex_unlock(&pc_lock);
+    // End of Locked Block
 
     connection = create_client_socket(connfd);
     if (method == 'H') {
@@ -127,6 +145,9 @@ void *consumers(void *thread_storage) {
   }
 }
 
+// serve requests:
+// producer function to serve requests in the requests folder
+// t: threa struct for storing thread references
 int serve_requests(struct threa *t) {
   struct dirent *d;
   DIR *directory;
@@ -141,6 +162,7 @@ int serve_requests(struct threa *t) {
     err(EXIT_FAILURE, "Cannot access required folder");
   }
 
+  // Parse Requests in Requests directory
   size_t buffer_size = 255;
   ssize_t count = 0;
   char *buffer = (char *)calloc(buffer_size, sizeof(char));
@@ -155,6 +177,8 @@ int serve_requests(struct threa *t) {
       }
       break;
     }
+
+    // Iterate through requests in a file
     while (1) {
       memset(buffer, 0, buffer_size);
       count = getline(&buffer, &buffer_size, f);
@@ -205,6 +229,7 @@ int serve_requests(struct threa *t) {
   free(buffer);
   closedir(directory);
 
+  // Serve Requests to Workers
   struct node *file_iterator = l->head;
   while (file_iterator != NULL) {
     if (pthread_mutex_lock(&pc_lock) != 0) {
@@ -225,7 +250,6 @@ int serve_requests(struct threa *t) {
   }
 
   sigterm_handler(SIGTERM);
-  fprintf(stderr, "Reached Baby\n");
   delete_list(l);
   return 0;
 }
@@ -270,6 +294,8 @@ int main(int argc, char *argv[]) {
   pthread_t thread_temp[threads];
   thread_list = thread_temp;
   int rc = 0;
+
+  // Thread Creation
   for (int iter = 0; iter < threads; iter++) {
     rc = pthread_create(&(thread_temp[iter]), NULL, consumers,
                         thread_storage) != 0;

@@ -1,5 +1,11 @@
 #include "communication.h"
 
+// acquire_file:
+// Set a lock on a file to access
+// t: thread sheet
+// file_name: name of the desired file
+// verb: Desired access, G to Read and P to Write
+// return: index of lock
 int acquire_file(struct threa *t, char *file_name, char verb) {
   int index = -1;
   int type = 0;
@@ -30,6 +36,10 @@ int acquire_file(struct threa *t, char *file_name, char verb) {
   return iter;
 }
 
+// drop_file:
+// Remove a taken lock from a file
+// t: thread sheet
+// iter: index of lock to drop
 void drop_file(struct threa *t, int iter) {
   pthread_mutex_lock(&(t->file_lock));
   t->wanters[iter] -= 1;
@@ -43,6 +53,10 @@ void drop_file(struct threa *t, int iter) {
   return;
 }
 
+// file_size:
+// check the size of the input file
+// filefd: file descriptor
+// return: size of the file in bytes
 ssize_t file_size(int filefd) {
   struct stat *stat_log = (struct stat *)calloc(1, sizeof(struct stat));
   if (!(stat_log)) {
@@ -61,6 +75,10 @@ ssize_t file_size(int filefd) {
   return size;
 }
 
+// file_check:
+// check if a file is accessible
+// file: name of the file to check
+// return: integer where positive is accessible and negative is not
 int file_check(char *file) {
   if (access(file, F_OK) != 0) {
     if (errno == EACCES) {
@@ -75,6 +93,12 @@ int file_check(char *file) {
   return 1;
 }
 
+// send_request:
+// send a request to the server
+// conn: connection descriptor
+// method: string to include in request
+// file_name: name of the file in request
+// return: integer, positive for success
 int send_request(int conn, char *method, char *file_name) {
   char *pack = (char *)calloc(100, sizeof(char));
   if (!(pack)) {
@@ -233,7 +257,7 @@ void print_response(int connfd, char *file_name, struct threa *t) {
     }
   }
 
- int filefd = open(path, O_CREAT | O_WRONLY | O_TRUNC, 0644);
+  int filefd = open(path, O_CREAT | O_WRONLY | O_TRUNC, 0644);
   if (filefd == -1) {
     free(path);
     drop_file(t, lock_index);
@@ -245,7 +269,7 @@ void print_response(int connfd, char *file_name, struct threa *t) {
   fprintf(stderr, "%s\n", buffer);
   while (to_go > 0) {
     if ((in = recv(connfd, buffer, 4096, 0)) < 0) {
-            perror("Read Error:");
+      perror("Read Error:");
       close(filefd);
       drop_file(t, lock_index);
       free(path);
