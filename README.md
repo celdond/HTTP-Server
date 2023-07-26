@@ -19,6 +19,10 @@ access to the server via TCP sockets.
 Use of the client is not explicitly neccessary, however, and any such client, like curl, can be used
 to prompt the server while running.
 
+## Note
+
+Neither the server nor client were meant to be used as standard HTTP servers or clients.  This was built for demonstrative and exercise purposes only.
+
 ### Server
 
 To build the server:
