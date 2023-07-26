@@ -19,6 +19,9 @@ pthread_mutex_t pc_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t empty_sig = PTHREAD_COND_INITIALIZER;
 pthread_cond_t full_sig = PTHREAD_COND_INITIALIZER;
 
+// sigterm handler:
+// Handles Clean-Up on Program Termination and the End of the Program
+// Sig: Input Termination Signal
 static void sigterm_handler(int sig) {
   if (sig == SIGTERM || sig == SIGINT) {
 
@@ -51,6 +54,11 @@ static void sigterm_handler(int sig) {
   }
 }
 
+// grab_length:
+// grabs the length of the content length header
+// buffer: storage containing the data to be read
+// i: current index in buffer
+// return: content-length as read by function
 ssize_t grab_length(char *buffer, ssize_t i) {
   ssize_t l = 0;
   for (;; i++) {
@@ -67,6 +75,11 @@ ssize_t grab_length(char *buffer, ssize_t i) {
   return l;
 }
 
+// header_check:
+// checks the headers to ensure proper format
+// buffer: storage containing header to check
+// size: size of the buffer in bytes
+// return: integer, positive for success
 int header_check(char *buffer, ssize_t size) {
   ssize_t x = 0;
   while (x < size) {
@@ -90,6 +103,10 @@ int header_check(char *buffer, ssize_t size) {
   return x;
 }
 
+// handle_request:
+// processes the request from the incoming connection
+// connfd: connection descriptor
+// t: thread sheet
 void handle_request(int connfd, struct threa *t) {
   char *buffer = (char *)calloc(1024, sizeof(char));
   char *method = (char *)calloc(8, sizeof(char));
@@ -98,6 +115,7 @@ void handle_request(int connfd, struct threa *t) {
   ssize_t j = 0;
   ssize_t size;
 
+  // Method Processing
   size = reader(connfd, buffer, 1024);
   while (!isspace((int)(buffer[i])) && (j < 6) && (i < size)) {
     method[j] = buffer[i];
@@ -106,6 +124,7 @@ void handle_request(int connfd, struct threa *t) {
   }
   method[j] = '\0';
 
+  // File Processing
   j = 5;
   while (isspace((int)(buffer[i])) && (i < 1024)) {
     i++;
@@ -120,6 +139,7 @@ void handle_request(int connfd, struct threa *t) {
   }
   path[j] = '\0';
 
+  // Version Processing
   while (isspace((int)(buffer[i])) && (i < 1024)) {
     i++;
   }
@@ -143,6 +163,7 @@ void handle_request(int connfd, struct threa *t) {
 
   free(version);
 
+  // Content-Length and Header Processing
   int length = 0;
   while ((size = reader(connfd, buffer, 1024)) > 0) {
     if (size > 16) {
@@ -165,6 +186,7 @@ void handle_request(int connfd, struct threa *t) {
     }
   }
 
+  // Send to proper function to fulfill request
   if (strncmp(method, "HEAD", 4) == 0) {
     head(connfd, path, t);
   } else if (strncmp(method, "GET", 3) == 0) {
@@ -186,6 +208,10 @@ void handle_request(int connfd, struct threa *t) {
   return;
 }
 
+// create_socket:
+// create a listening socket
+// input_port: port number to create a listener from
+// return: connection descriptor
 static int create_socket(int input_port) {
   int sock = socket(AF_INET, SOCK_STREAM, 0);
   if (sock < 0) {
@@ -209,6 +235,10 @@ static int create_socket(int input_port) {
   return sock;
 }
 
+// producer:
+// thread function to serve requests to workers
+// listenfd: socket descriptor
+// t: thread sheet
 void producer(int listenfd, struct threa *t) {
   int connfd;
   while (1) {
@@ -234,6 +264,9 @@ void producer(int listenfd, struct threa *t) {
   return;
 }
 
+// consumers:
+// worker thread function to take requests
+// thread_storage: thread sheet housing information
 void *consumers(void *thread_storage) {
   int connfd;
   struct threa *t = thread_storage;
@@ -303,6 +336,8 @@ int main(int argc, char *argv[]) {
   pthread_t thread_temp[threads];
   thread_list = thread_temp;
   int rc = 0;
+
+  // create worker threads
   for (int iter = 0; iter < threads; iter++) {
     rc = pthread_create(&(thread_temp[iter]), NULL, consumers,
                         thread_storage) != 0;

@@ -1,5 +1,11 @@
 #include "server.h"
 
+// acquire_file:
+// Set a lock on a file to access
+// t: thread sheet
+// file_name: name of the desired file
+// verb: Desired access, G to Read and P to Write
+// return: index of lock
 int acquire_file(struct threa *t, char *file_name, char verb) {
   int index = -1;
   int type = 0;
@@ -30,6 +36,10 @@ int acquire_file(struct threa *t, char *file_name, char verb) {
   return iter;
 }
 
+// drop_file:
+// Remove a taken lock from a file
+// t: thread sheet
+// iter: index of lock to drop
 void drop_file(struct threa *t, int iter) {
   pthread_mutex_lock(&(t->file_lock));
   t->wanters[iter] -= 1;
@@ -43,6 +53,10 @@ void drop_file(struct threa *t, int iter) {
   return;
 }
 
+// file_size:
+// check the size of the input file
+// filefd: file descriptor
+// return: size of the file in bytes
 ssize_t file_size(int filefd) {
   struct stat *stat_log = (struct stat *)calloc(1, sizeof(struct stat));
   if (!(stat_log)) {
@@ -61,6 +75,10 @@ ssize_t file_size(int filefd) {
   return size;
 }
 
+// file_check:
+// check if a file is accessible
+// file: name of the file to check
+// return: integer where positive is accessible and negative is not
 int file_check(char *file, int connfd) {
   if (access(file, F_OK) != 0) {
     if (errno == EACCES) {
@@ -75,6 +93,12 @@ int file_check(char *file, int connfd) {
   return 1;
 }
 
+// reader:
+// reads in from the port byte by byte
+// connection_port: port connection to listen to
+// buffer: storage for bytes read from the port
+// size: size of the buffer in bytes
+// return: number of bytes read
 ssize_t reader(int connection_port, char *buffer, ssize_t size) {
   ssize_t i = 0;
   char terminate = '\0';
@@ -96,6 +120,11 @@ ssize_t reader(int connection_port, char *buffer, ssize_t size) {
   return i;
 }
 
+// head:
+// process a head request
+// connfd: connection decriptor
+// file_name: name of the desired file
+// t: thread sheet
 void head(int connfd, char *file_name, struct threa *t) {
   int lock_index = acquire_file(t, file_name, 'G');
   if (file_check(file_name, connfd) < 0) {
@@ -127,6 +156,11 @@ void head(int connfd, char *file_name, struct threa *t) {
   return;
 }
 
+// get_file:
+// process a get request
+// connfd: connection descriptor
+// file_name: name of the desired file
+// t: thread sheet
 void get_file(int connfd, char *file_name, struct threa *t) {
   int lock_index = acquire_file(t, file_name, 'G');
   if (file_check(file_name, connfd) < 0) {
@@ -176,6 +210,12 @@ void get_file(int connfd, char *file_name, struct threa *t) {
   return;
 }
 
+// put_file:
+// processes a put request
+// connfd: connection descriptor
+// file_name: name of the desired file
+// size: size of the incoming file in bytes
+// t: thread sheet
 void put_file(int connfd, char *file_name, ssize_t size, struct threa *t) {
   int result_message = 200;
   int lock_index = acquire_file(t, file_name, 'P');
@@ -219,6 +259,11 @@ void put_file(int connfd, char *file_name, ssize_t size, struct threa *t) {
   return;
 }
 
+// delete_file:
+// processes a delete request
+// connfd: connection descriptor
+// file_name: name of the desired file
+// t: thread sheet
 void delete_file(int connfd, char *file_name, struct threa *t) {
   int lock_index = acquire_file(t, file_name, 'P');
   if (file_check(file_name, connfd) < 0) {
@@ -236,6 +281,12 @@ void delete_file(int connfd, char *file_name, struct threa *t) {
   return;
 }
 
+// send_message:
+// sends a response message in HTTP form
+// connfd: connection descriptor to send message to
+// mess_num: HTTP protocol code
+// message: message to go with the code
+// size: the length of the content to be sent in bytes
 void send_message(int connfd, int mess_num, char *message, ssize_t size) {
   char *pack = (char *)calloc(100, sizeof(char));
   if (!(pack)) {
